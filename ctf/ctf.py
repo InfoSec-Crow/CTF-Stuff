@@ -16,18 +16,12 @@ def folder():
     print(f'Make folder: {WS_PATH}{args.name}')
 
 def nmap():
-    # Nmap-Befehl zusammenbauen
     nmap_command = f"nmap -v -sC -sV -oN {args.name}.nmap {args.ip}"
-
-    # Nmap-Befehl mit Popen ausführen
     process = subprocess.Popen(nmap_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    # Live-Ausgabe des Befehls in Echtzeit anzeigen
     for stdout_line in iter(process.stdout.readline, ""):
-        print(stdout_line, end="")  # Ausgeben der stdout-Zeile
+        print(stdout_line, end="")
     for stderr_line in iter(process.stderr.readline, ""):
-        print(stderr_line, end="")  # Ausgeben der stderr-Zeile
-
+        print(stderr_line, end="")
     process.stdout.close()
     process.stderr.close()
     process.wait()
