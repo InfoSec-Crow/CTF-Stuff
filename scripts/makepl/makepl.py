@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import argparse
-import subprocess
+import subprocess, os
+from pathlib import Path
 from pl.php_pl import php_pl
 from pl.bash_pl import bash_pl
 from pl.ps_pl import ps_pl 
@@ -13,7 +14,8 @@ parser.add_argument("--lhost", type=str, default=get_tun0_ip(), help='local host
 parser.add_argument("--lport", type=int, default=1234, help='local port (default: 1234)')
 args = parser.parse_args()
 
-PL_PATH = '/opt/Scripts/makepl/payloads/'
+original_script_path = Path(__file__).resolve()
+PL_PATH = str(original_script_path.parent) + '/payloads/'
 
 def main():
     print("=== Make Payload ===")

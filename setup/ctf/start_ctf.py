@@ -15,6 +15,11 @@ def folder():
     os.makedirs(f'{WS_PATH}{args.name}', exist_ok=True)
     print(f'Make folder: {WS_PATH}{args.name}')
 
+def hosts():
+    entry = f"{args.ip}\t{args.name.lower()}.htb"
+    with open('/etc/hosts', "a") as file:
+        file.write(f"\n{entry}\n")
+
 def nmap():
     nmap_command = f"nmap -v -sC -sV -oN {args.name}.nmap {args.ip}"
     process = subprocess.Popen(nmap_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -27,5 +32,7 @@ def nmap():
     process.wait()
 
 folder()
+hosts()
 os.chdir(f'{WS_PATH}{args.name}')
+os.system(f'echo "cd {WS_PATH}{args.name}" | xclip -selection clipboard')
 nmap()

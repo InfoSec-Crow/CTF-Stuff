@@ -12,4 +12,4 @@ Currently available:
     - base64 revshell.sh
 
 ### Creating a symbolic link
-`ln -s /opt/Scripts/makepl/makepl.py /usr/local/bin/makepl`
+`ln -s /opt/CTF-Stuff/scripts/makepl/makepl.py /usr/local/bin/makepl`

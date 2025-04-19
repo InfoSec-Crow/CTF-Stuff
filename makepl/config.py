@@ -1,1 +1,0 @@
-PL_PATH = '/opt/Scripts/makepl/payloads/'
