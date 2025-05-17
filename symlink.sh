@@ -10,3 +10,4 @@ chmod +x /opt/CTF-Stuff/scripts/ssh_/ssh_.py
 
 # Setup
 sudo ln -s /opt/CTF-Stuff/setup/ctf/start_ctf.py /usr/local/bin/start_ctf
+chmod +x /opt/CTF-Stuff/setup/ctf/start_ctf.py
