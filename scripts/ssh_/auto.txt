@@ -1,0 +1,2 @@
+/usr/share/peass/linpeas/linpeas.sh
+/opt/pspy/pspy64
