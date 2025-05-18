@@ -9,7 +9,11 @@ WS_PATH = '/home/kali/Desktop/htb/box/'
 parser = argparse.ArgumentParser(description='CTF start commands')
 parser.add_argument("-n","--name", required=True, type=str, help='Name')
 parser.add_argument("-i", "--ip", required=True, type=str, help='IP')
+parser.add_argument('-w', '--windows', action='store_true', help='Adds windows domain to /etc/hosts')
 args = parser.parse_args()
+
+if args.windows:
+    os.system(f'netexec smb {args.ip} --generate-hosts-file /etc/hosts')
 
 def folder():
     os.makedirs(f'{WS_PATH}{args.name}', exist_ok=True)
