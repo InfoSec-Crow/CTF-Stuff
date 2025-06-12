@@ -11,7 +11,7 @@ info = '''
 krb = generate krb5 file\t(nxc)
 bh = collect bloodhound\t(rust-bh)
 dele = find delegation\t(impacket)
-mem = memberships\t(bloodyad)
+sid = domain sids\t(impacket)
 
 [Lists]
 user = usernames\t(bloodyad)
@@ -21,8 +21,11 @@ group = groups\t\t(bloodyad)
 [DACL]
 acl = show acl\t(impacket)
 gadd = add user to group\t(bloodyad)
-glist = list groups from user\t(impacket)
+glist = list groups from user\t(bloodyad)
 gremove = remove user from group\t(bloodyad)
+activ = activate account\t(bloodyad)
+wowner = write owner\t(impacket)
+rowner = read owner\t(impacket)
 
 [Attacks]
 aroast = asreproasting\t(nxc)
@@ -30,6 +33,7 @@ kroast = kerberoasting\t(nxc)
 chpw = ForceChangePassword\t(bloodyad)
 sc = Shadow Credentials\t(certipy)
 gmsa = ReadGMSAPassword\t(nxc)
+dcsync = DCSync\t(impacket)
 '''
 
 parser = argparse.ArgumentParser(
@@ -42,31 +46,33 @@ parser = argparse.ArgumentParser(
 # parser.add_argument("--fqdn", type=str.lower)
 parser.add_argument("-u", "--username", type=str)
 parser.add_argument("-p", "--password", type=str)
+parser.add_argument("-H", "--hash", type=str, nargs='?', const='empty', help='users NT hash')
+parser.add_argument("-k", "--kerberos", action="store_true", help="Use Kerberos authentication")
 parser.add_argument("-t", "--target", type=str.lower, help='If no input is made, the username is the target')
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
-
 parser.add_argument("-a", "--action", default=[], type=str, const='__show__', nargs="?", help=info)
 
-parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
+#parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
+
 args = parser.parse_args()
 
 #config.VERBOSE = [' > /dev/null 2>&1']
-config.VERBOSE = args.verbose
+#config.VERBOSE = args.verbose
 
+password = None
 box = config.Box()
 box.username = args.username
-box.password = args.password
+if args.password:
+    box.password = args.password
+    password = args.password
+if args.hash == 'empty':
+    box.nt_hash = config.nt_hashing(box, args.hash)
+    password = box.nt_hash
+else:
+    box.nt_hash = args.hash
+    password = box.nt_hash
 box.target = args.target
 box.targetgroup = args.targetgroup
-
-print(f'''NAME:\t\t{box.name}
-IP:\t\t{box.ip}
-HOSTNAME:\t{box.hostname}
-FQDN:\t\t{box.fqdn}
-DOMAIN:\t\t{box.domain}
-CREDS:\t\t{box.username}: {box.password}
-TARGET:\t\t{box.target}
-TARGET GROUP:\t{box.targetgroup}\n''')
 
 path = config.PATH()
 path.setup(box.name)
@@ -75,43 +81,73 @@ os.makedirs(path.ws_log, exist_ok=True)
 os.makedirs(path.ws_enum, exist_ok=True)
 os.makedirs(path.ws_lst, exist_ok=True)
 os.makedirs(path.ws_atk, exist_ok=True)
+os.makedirs(path.ws_ccache, exist_ok=True)
+
+if args.kerberos:
+    box.krb = config.kerberos_auth(box, path)
+
+print(f'''NAME:\t\t{box.name}
+IP:\t\t{box.ip}
+HOSTNAME:\t{box.hostname}
+FQDN:\t\t{box.fqdn}
+DOMAIN:\t\t{box.domain}
+CREDS:\t\t{box.username} : {password}
+CACHE:\t\t{box.krb}
+TARGET:\t\t{box.target}
+TARGET GROUP:\t{box.targetgroup}\n''')
 
 if args.action == '__show__':
     print(info)
     exit()
 for action in args.action.split(','):
-    if 'krb5' == args.action:
+    if 'krb' == action:
         enum.generate_krb5(box)
-    if 'bh' == args.action:
+    elif 'bh' == action:
         enum.dmp_bloodhound(box, path) 
-    if 'acl' == args.action:
-        enum.list_acl(box, path)
-    if 'dele' == args.action:
+    elif 'dele' == action:
         enum.findDelegation(box, path)
-    if 'mem' == args.action:
-        enum.membership(box, path)
-    if 'user' == args.action:
-        lst.users(box, path)
-    if 'computer' == args.action:
-        lst.computers(box, path)
-    if 'group' == args.action:
-        lst.groups(box, path)
-    if 'gadd' == args.action:
-        dacl.add_user_to_group(box)
-    if 'glist' == args.action:
-        dacl.list_user_to_group(box)
-    if 'gremove' == args.action:
-        dacl.remove_user_to_group(box)
-    if 'aroast' == args.action:
-        atk.asreproast(box, path)
-    if 'kroast' == args.action:
-        atk.krbroast(box, path)
-    if 'tkroast' == args.action:
-        atk.target_krbroast(box, path)
-    if 'sc' == args.action:
-        atk.shadow_creds(box, path)
-    if 'gmsa' == args.action:
-        atk.ReadGMSAPassword(box, path)
-    if 'chpw' == args.action:
-        atk.ForceChangePassword(box)
+    elif 'sid' == action:
+        enum.domain_sids(box, path)
 
+    elif 'user' == action:
+        lst.users(box, path)
+    elif 'computer' == action:
+        lst.computers(box, path)
+    elif 'group' == action:
+        lst.groups(box, path)
+
+    elif 'acl' == action:
+        dacl.list_acl(box, path)
+    elif 'gadd' == action:
+        dacl.add_user_to_group(box)
+    elif 'glist' == action:
+        dacl.list_user_to_group(box)
+    elif 'gremove' == action:
+        dacl.remove_user_to_group(box)
+    elif 'activ' == action:
+        dacl.activate_account(box)
+    elif 'wowner' == action:
+        dacl.read_write_owner(box, 'write')
+    elif 'rowner' == action:
+        dacl.read_write_owner(box, 'read')
+    elif 'edit' == action:
+        dacl.dacledit(box)
+
+    elif 'aroast' == action:
+        atk.asreproast(box, path)
+    elif 'kroast' == action:
+        atk.krbroast(box, path)
+    elif 'tkroast' == action:
+        atk.target_krbroast(box, path)
+    elif 'sc' == action:
+        atk.shadow_creds(box, path)
+    elif 'gmsa' == action:
+        atk.ReadGMSAPassword(box, path)
+    elif 'chpw' == action:
+        atk.ForceChangePassword(box)
+    elif 'dcsync' == action:
+        atk.dcsync(box,path)
+
+    else:
+        print(f'\033[91m[!]\033[0m There is no action: {action}')
+        exit()
