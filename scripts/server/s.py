@@ -61,6 +61,8 @@ if args.transfer:
     print()
     print(upload_commands["powershell"])
     print()
+    print('CertUtil -hashfile <file> MD5')
+    print()
     app = Flask(__name__)
     UPLOAD_FOLDER = os.getcwd()
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
