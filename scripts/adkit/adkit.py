@@ -36,6 +36,7 @@ gmsa = ReadGMSAPassword\t(nxc)
 laps = ReadLAPSPassword\t(impacket)
 dcsync = DCSync\t(impacket)
 gold = Golden Ticket\t(impacket)
+silver = Silver Ticket\t(impacket)
 
 [ADCS]
 vulntemp = find vuln CertTemp\t(certipy)
