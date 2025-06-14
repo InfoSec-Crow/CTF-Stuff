@@ -56,11 +56,11 @@ def add_user_to_group(box):
         print(f'\033[94m[!]\033[0m Use username as target!')
         box.target = box.username
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k add groupMember {box.targetgroup} {box.target}"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k add groupMember '{box.targetgroup}' {box.target}"
     elif box.nt_hash:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} add groupMember {box.targetgroup} {box.target}"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} add groupMember '{box.targetgroup}' {box.target}"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' add groupMember {box.targetgroup} {box.target}"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' add groupMember '{box.targetgroup}' {box.target}"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
@@ -91,11 +91,11 @@ def remove_user_to_group(box):
         print(f'\033[94m[!]\033[0m Use username as target!')
         box.target = box.username
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k remove groupMember {box.targetgroup} {box.target}"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k remove groupMember '{box.targetgroup}' {box.target}"
     elif box.nt_hash:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} remove groupMember {box.targetgroup} {box.target}"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} remove groupMember '{box.targetgroup}' {box.target}"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' remove groupMember {box.targetgroup} {box.target}"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' remove groupMember '{box.targetgroup}' {box.target}"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
