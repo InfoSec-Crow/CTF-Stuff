@@ -26,6 +26,7 @@ gremove = remove user from group\t(bloodyad)
 activ = activate account\t(bloodyad)
 wowner = write owner\t(impacket)
 rowner = read owner\t(impacket)
+addcomputer = add computer\t(impacket)
 
 [Attacks]
 aroast = asreproasting\t(nxc)
@@ -37,6 +38,7 @@ laps = ReadLAPSPassword\t(impacket)
 dcsync = DCSync\t(impacket)
 gold = Golden Ticket\t(impacket)
 silver = Silver Ticket\t(impacket)
+rbcd = Resource Based Constrained Delegation\t(impacket)
 
 [ADCS]
 vulntemp = find vuln CertTemp\t(certipy)
@@ -150,6 +152,8 @@ for action in args.action.split(','):
         dacl.read_write_owner(box, 'read')
     elif 'edit' == action:
         dacl.dacledit(box)
+    elif 'addcomputer' == action:
+        dacl.addcomputer(box)
 
     elif 'aroast' == action:
         atk.asreproast(box, path)
@@ -171,6 +175,9 @@ for action in args.action.split(','):
         atk.golden_ticket(box,path)  
     elif 'silver' == action:
         atk.silver_ticket(box,path) 
+    elif 'rbcd' == action:
+        atk.rbcd(box,path)
+
     elif 'vulntemp' == action:
         adcs.find_vuln_temp(box,path)
 
