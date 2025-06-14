@@ -78,7 +78,7 @@ if args.password:
 if args.hash == 'empty':
     box.nt_hash = config.nt_hashing(box, args.hash)
     password = box.nt_hash
-else:
+elif args.hash:
     box.nt_hash = args.hash
     password = box.nt_hash
 box.target = args.target
