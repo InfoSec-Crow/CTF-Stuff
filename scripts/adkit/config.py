@@ -14,18 +14,21 @@ def get_hosts_entry():
     return l
 
 class Box:
-    l = get_hosts_entry()
-    ip = l[0]
-    fqdn = l[1].lower()
-    hostname = l[3].lower()
-    domain = l[2].lower()
-    name = l[1].split('.')[1].lower()
-    username = None
-    password = None
-    nt_hash = None
-    krb = None
-    target = None
-    targetgroup = None
+    try:
+        l = get_hosts_entry()
+        ip = l[0]
+        fqdn = l[1].lower()
+        hostname = l[3].lower()
+        domain = l[2].lower()
+        name = l[1].split('.')[1].lower()
+        username = None
+        password = None
+        nt_hash = None
+        krb = None
+        target = None
+        targetgroup = None
+    except:
+        print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
 
 class PATH:
     ws = None
@@ -33,6 +36,7 @@ class PATH:
     ws_dump = None
     ws_lst = None
     ws_atk = None
+    ws_adcs = None
 
     @classmethod
     def setup(cls, name):
@@ -42,6 +46,7 @@ class PATH:
         cls.ws_lst = f'{cls.ws}/lst/'
         cls.ws_atk = f'{cls.ws}/atk/'
         cls.ws_ccache = f'{cls.ws}/ccache/'
+        cls.ws_adcs = f'{cls.ws}/adcs/'
 
 def de_timestemp():
     utc_now = datetime.now(pytz.utc)
@@ -77,10 +82,19 @@ def log_cmd(content):
                     f.write(de_timestemp() + '\n')
                     f.write(line + '\n')
 
+def set_hosts_entry(ip):
+    print('\033[93m[*]\033[0m Generate hosts file')
+    cmd = f'netexec smb {ip} --generate-hosts-file /etc/hosts'
+    print(f'\033[96m[$]\033[0m {cmd}')
+    os.system(cmd)
+    os.system('tail -n1 /etc/hosts')
+    print('\033[92m[+]\033[0m Generate hosts file\n')
+
 def nt_hashing(box, nt_hash):
     if nt_hash == 'empty':
         if box.password:
-            return os.popen(f"pypykatz crypto nt '{box.password}'").read().strip()
+            cmd = f"pypykatz crypto nt '{box.password}'"
+            return os.popen(cmd).read().strip()
         else:
             print('''\033[91m[!]\033[0m Required a hash or password for -H, --hash!
             ''')

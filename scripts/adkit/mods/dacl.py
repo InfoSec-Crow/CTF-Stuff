@@ -53,9 +53,10 @@ def add_user_to_group(box):
     print(f'\033[93m[*]\033[0m Add user to group')
     #cmd = f"impacket-net {box.domain}/{box.username}:'{box.password}'@{box.fqdn} group -name '{box.targetgroup}' -join {box.target}"
     if not box.target:
+        print(f'\033[94m[!]\033[0m Use username as target!')
         box.target = box.username
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p -k add groupMember {box.targetgroup} {box.target}"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k add groupMember {box.targetgroup} {box.target}"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} add groupMember {box.targetgroup} {box.target}"
     else:
@@ -69,9 +70,10 @@ def list_user_to_group(box):
     print(f'\033[93m[*]\033[0m List users in group')
     #cmd = f"impacket-net {box.domain}/{box.username}:'{box.password}'@{box.fqdn} group -name '{box.targetgroup}'"
     if not box.target:
+        print(f'\033[94m[!]\033[0m Use username as target!')
         box.target = box.username
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p -k get membership {box.target}"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k get membership {box.target}"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} get membership {box.target}"
     else:
@@ -86,9 +88,10 @@ def remove_user_to_group(box):
     print(f'\033[93m[*]\033[0m Remove user from group')
     #cmd = f"impacket-net {box.domain}/{box.username}:'{box.password}'@{box.fqdn} group -name '{box.targetgroup}' -unjoin {box.target}"
     if not box.target:
+        print(f'\033[94m[!]\033[0m Use username as target!')
         box.target = box.username
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p -k remove groupMember {box.targetgroup} {box.target}"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -k remove groupMember {box.targetgroup} {box.target}"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} remove groupMember {box.targetgroup} {box.target}"
     else:

@@ -12,15 +12,17 @@ def generate_krb5(box):
 
 def dmp_bloodhound(box, path):
     config.required_creds(box)
-    os.chdir(path.ws_enum)
     print('\033[93m[*]\033[0m Dump BloodHound data')
     if box.nt_hash or box.krb:
-        print(f'[!] No NT-hash support, use kerberos authentication!\n\t- Need /etc/krb5.conf file, use -a krb')
-        cmd = f"{box.krb} rusthound-ce -f {box.fqdn} -d {box.domain} -n {box.ip} -u {box.username} -k -c All --zip"
+        print('[!] No NT-hash support, use kerberos authentication!')
+        print('[!] Need /etc/krb5.conf file, use -a, --action krb')
+        krb = config.kerberos_auth(box, path)
+        cmd = f"{krb} rusthound-ce -f {box.fqdn} -d {box.domain} -n {box.ip} -u {box.username} -k -c All --zip"
     else:
         cmd = f"rusthound-ce -f {box.fqdn} -d {box.domain} -n {box.ip} -u {box.username} -p '{box.password}' -c All --zip"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
+    os.chdir(path.ws_enum)
     os.system(cmd+ ' 2>&1 | tee dump_bloodhound.out')
     print('\033[92m[+]\033[0m Dump BloodHound data\n')
     

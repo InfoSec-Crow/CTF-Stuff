@@ -4,7 +4,7 @@ import os
 import subprocess
 import argparse
 import config
-from mods import dacl, lst, enum, atk
+from mods import dacl, lst, enum, atk, adcs
 
 info = '''
 [Enumeration]
@@ -33,21 +33,27 @@ kroast = kerberoasting\t(nxc)
 chpw = ForceChangePassword\t(bloodyad)
 sc = Shadow Credentials\t(certipy)
 gmsa = ReadGMSAPassword\t(nxc)
+laps = ReadLAPSPassword\t(impacket)
 dcsync = DCSync\t(impacket)
+gold = Golden Ticket\t(impacket)
+
+[ADCS]
+vulntemp = find vuln CertTemp\t(certipy)
 '''
 
 parser = argparse.ArgumentParser(
     description="Toolkit for Windows AD enumeration and exploitation",
     formatter_class=argparse.RawTextHelpFormatter
 )
-# parser.add_argument("-i", "--ip", type=str)
+parser.add_argument("-i", "--ip", type=str, help='Only for generate hosts file')
 # parser.add_argument("--name", type=str.lower)
 # parser.add_argument("--domain", type=str.lower)
 # parser.add_argument("--fqdn", type=str.lower)
 parser.add_argument("-u", "--username", type=str)
 parser.add_argument("-p", "--password", type=str)
 parser.add_argument("-H", "--hash", type=str, nargs='?', const='empty', help='users NT hash')
-parser.add_argument("-k", "--kerberos", action="store_true", help="Use Kerberos authentication")
+parser.add_argument("-k", "--kerberos", nargs='?', const=True, default=False, help="Use Kerberos authentication; passing of ccache file path possible")
+
 parser.add_argument("-t", "--target", type=str.lower, help='If no input is made, the username is the target')
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
 parser.add_argument("-a", "--action", default=[], type=str, const='__show__', nargs="?", help=info)
@@ -55,6 +61,10 @@ parser.add_argument("-a", "--action", default=[], type=str, const='__show__', na
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 
 args = parser.parse_args()
+
+if args.ip:
+    config.set_hosts_entry(args.ip)
+    exit()
 
 #config.VERBOSE = [' > /dev/null 2>&1']
 #config.VERBOSE = args.verbose
@@ -82,9 +92,16 @@ os.makedirs(path.ws_enum, exist_ok=True)
 os.makedirs(path.ws_lst, exist_ok=True)
 os.makedirs(path.ws_atk, exist_ok=True)
 os.makedirs(path.ws_ccache, exist_ok=True)
+os.makedirs(path.ws_adcs, exist_ok=True)
 
 if args.kerberos:
-    box.krb = config.kerberos_auth(box, path)
+    os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
+    if args.kerberos == True:
+        box.krb = config.kerberos_auth(box, path)
+    elif '/' in args.kerberos:
+        box.krb = f"KRB5CCNAME='{args.kerberos}'"
+    else:
+        box.krb = f"KRB5CCNAME='{path.ws_ccache}{args.kerberos}'"
 
 print(f'''NAME:\t\t{box.name}
 IP:\t\t{box.ip}
@@ -143,10 +160,18 @@ for action in args.action.split(','):
         atk.shadow_creds(box, path)
     elif 'gmsa' == action:
         atk.ReadGMSAPassword(box, path)
+    elif 'laps' == action:
+        atk.ReadLAPSPassword(box, path)
     elif 'chpw' == action:
         atk.ForceChangePassword(box)
     elif 'dcsync' == action:
         atk.dcsync(box,path)
+    elif 'gold' == action:
+        atk.golden_ticket(box,path)  
+    elif 'silver' == action:
+        atk.silver_ticket(box,path) 
+    elif 'vulntemp' == action:
+        adcs.find_vuln_temp(box,path)
 
     else:
         print(f'\033[91m[!]\033[0m There is no action: {action}')
