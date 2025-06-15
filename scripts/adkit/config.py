@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 import pytz
 
-WS_PATH = '/home/kali/htb/box/'
+WS_PATH = '/home/kali/Desktop/'
 CMD_LOG_FILE = 'commands.log'
 VERBOSE = None
 
@@ -27,6 +27,7 @@ class Box:
         krb = None
         target = None
         targetgroup = None
+        ca = None
     except:
         print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
 
@@ -123,6 +124,13 @@ def required_targetgroup(box):
     if not box.targetgroup:
         print('''\033[91m[!]\033[0m Required!
     -tg, --targetgroup
+        ''')
+        exit()
+
+def required_ca(box):
+    if not box.ca:
+        print('''\033[91m[!]\033[0m Required!
+    -ca
         ''')
         exit()
 
