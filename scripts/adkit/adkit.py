@@ -42,6 +42,10 @@ rbcd = Resource Based Constrained Delegation\t(impacket)
 
 [ADCS]
 vulntemp = find vuln CertTemp\t(certipy)
+esc1 = ESC1\t(certipy)
+esc2 = ESC2\t(certipy)
+esc3 = ESC3\t(certipy)
+esc4 = ESC4\t(certipy)
 '''
 
 parser = argparse.ArgumentParser(
@@ -57,13 +61,14 @@ parser.add_argument("-p", "--password", type=str)
 parser.add_argument("-H", "--hash", type=str, nargs='?', const='empty', help='users NT hash')
 parser.add_argument("-k", "--kerberos", nargs='?', const=True, default=False, help="Use Kerberos authentication; passing of ccache file path possible")
 
-parser.add_argument("-t", "--target", type=str.lower, help='If no input is made, the username is the target')
-parser.add_argument("-tg", "--targetgroup", type=str.lower)
+parser.add_argument("-t", "--target", type=str, help='If no input is made, the username is the target')
+parser.add_argument("-tg", "--targetgroup", type=str)
 parser.add_argument("-a", "--action", default=[], type=str, const='__show__', nargs="?", help=info)
+parser.add_argument("-ca", type=str, help="certificate authority name")
 
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
-
 args = parser.parse_args()
+
 
 if args.ip:
     config.set_hosts_entry(args.ip)
@@ -86,6 +91,7 @@ elif args.hash:
     password = box.nt_hash
 box.target = args.target
 box.targetgroup = args.targetgroup
+box.ca = args.ca
 
 path = config.PATH()
 path.setup(box.name)
@@ -114,7 +120,8 @@ DOMAIN:\t\t{box.domain}
 CREDS:\t\t{box.username} : {password}
 CACHE:\t\t{box.krb}
 TARGET:\t\t{box.target}
-TARGET GROUP:\t{box.targetgroup}\n''')
+TARGET GROUP:\t{box.targetgroup}
+CA:\t\t{box.ca}\n''')
 
 if args.action == '__show__':
     print(info)
@@ -180,6 +187,14 @@ for action in args.action.split(','):
 
     elif 'vulntemp' == action:
         adcs.find_vuln_temp(box,path)
+    elif 'esc1' == action:
+        adcs.esc1(box,path)    
+    elif 'esc2' == action:
+        adcs.esc2_and_3(box, path, 2)
+    elif 'esc3' == action:
+        adcs.esc2_and_3(box, path, 3)
+    elif 'esc4' == action:
+        adcs.esc4(box, path)
 
     else:
         print(f'\033[91m[!]\033[0m There is no action: {action}')
