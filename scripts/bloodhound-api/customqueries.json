@@ -1,0 +1,21 @@
+[
+{
+    "name": "Search From Owned (<Name>) to Anything",
+    "query": "MATCH p=shortestPath((s:Base)-[:Owns|GenericAll|GenericWrite|WriteOwner|WriteDacl|MemberOf|ForceChangePassword|AllExtendedRights|AddMember|HasSession|GPLink|AllowedToDelegate|CoerceToTGT|AllowedToAct|AdminTo|CanPSRemote|CanRDP|ExecuteDCOM|HasSIDHistory|AddSelf|DCSync|ReadLAPSPassword|ReadGMSAPassword|DumpSMSAPassword|SQLAdmin|AddAllowedToAct|WriteSPN|AddKeyCredentialLink|SyncLAPSPassword|WriteAccountRestrictions|WriteGPLink|GoldenCert|ADCSESC1|ADCSESC3|ADCSESC4|ADCSESC6a|ADCSESC6b|ADCSESC9a|ADCSESC9b|ADCSESC10a|ADCSESC10b|ADCSESC13|SyncedToEntraUser|CoerceAndRelayNTLMToSMB|Enroll|CoerceAndRelayNTLMToADCS|WriteOwnerLimitedRights|OwnsLimitedRights|CoerceAndRelayNTLMToLDAP|CoerceAndRelayNTLMToLDAPS|Contains|DCFor|TrustedBy*1..]->(t:Base)) WHERE COALESCE(s.system_tags, '') CONTAINS 'owned' AND s<>t AND s.samaccountname CONTAINS '<Name>' RETURN p"
+},
+{
+    "name": "ADCS: List all objects that can enroll",
+    "query": "MATCH p=shortestPath((s:Base)-[:Enroll*1..]->(t:Base)) WHERE s<>t RETURN p"
+},
+{
+    "name": "List all owned objects",
+    "query": "MATCH p = (n) WHERE COALESCE(n.system_tags, '') CONTAINS 'owned' RETURN p"
+},
+{
+    "name": "List the groups of all owned users",
+    "query": "MATCH (m:User) WHERE COALESCE(m.system_tags, '') CONTAINS 'owned' WITH m MATCH p=(m)-[:MemberOf*1..]->(n:Group) RETURN p"
+},
+{
+    "name": "Top 10 users with most sessions",
+    "query": "MATCH (n:User),(m:Computer), (n)<-[r:HasSession]-(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH n, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)-[r:HasSession]->(n) RETURN p"
+}]
