@@ -2,23 +2,25 @@
 import requests
 import json
 import argparse
+from time import sleep
 
-parser = argparse.ArgumentParser(description='BloodHound CE API calls')
+parser = argparse.ArgumentParser(description='BloodHound CE edition API calls')
 parser.add_argument("--url", type=str, default='http://localhost:8080', help='')
 parser.add_argument("-u", "--username", type=str, default='admin', help='')
 parser.add_argument("-p", "--password", type=str, default='Bloodhound1!', help='')
+
 parser.add_argument("-z", "--zip", type=str, help='Zip file for the upload')
-
 parser.add_argument("-c", "--clear", action="store_true", help="Clear database")
+parser.add_argument("-lj", "--listjobs", action="store_true", help='List all jobs queries')
 
-parser.add_argument("-l", "--list", action="store_true", help='List all custom queries')
+parser.add_argument("-lq", "--listquery", action="store_true", help='List all custom queries')
 parser.add_argument("-f", "--file", type=str, help='Add custom queries from JSON file')
 parser.add_argument("-r", "--remove", type=str, help='Remove a query, [id or "all"]')
 parser.add_argument("-q", "--query", type=str, help='Query to run')
+
 parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
 args = parser.parse_args()
-
 
 def login():
     print('[*] Login')
@@ -28,9 +30,12 @@ def login():
         "secret": args.password
     }
     r = requests.post(f"{args.url}/api/v2/login", json=login_data)
-    session_token= r.json().get("data", {}).get("session_token")
+    session_token = r.json().get("data", {}).get("session_token")
     if session_token != None:
-        print(f'\033[92m[+]\033[0m Logged in successfully\n')
+        print(f'\033[92m[+]\033[0m Logged in successfully')
+        if args.verbose:
+            print(session_token)
+        print()
     else:
         print(f'\033[91m[-]\033[0m Login falied')
         exit()
@@ -88,29 +93,77 @@ def remove_all_queries():
     for entry in list_queries(False).get('data'):
         remove_query(str(entry.get('id')))
 
-def list_jobs():
+def list_jobs(show=True):
     r = requests.get(f"{args.url}/api/v2/file-upload", headers=TOKEN)
     data = r.json()
-    print(json.dumps(data, indent=2))
+    if show:
+        print(json.dumps(data, indent=2))
+    return data
 
-def start_job():
+def upload_zip(run=1, ids=[]):
+    print("[*] Starting job")
     r = requests.post(f"{args.url}/api/v2/file-upload/start", headers=TOKEN)
-    data = r.json()
-    print(json.dumps(data, indent=2))
-    return data.get("data", {}).get("id")
+    if r.status_code == 201:
+        print("\033[92m[+]\033[0m Starting job successfully")
+        r_content = r.content.decode('utf-8')
+        json_obj = json.loads(r_content)
+        file_upload_job_id = str(json_obj['data']['id'])
+    else:
+        print(f"\033[91m[-]\033[0m Starting job failed - {r.status_code}")
+        exit()
 
-def upload(file_upload_job_id):
+    print(f"[*] Upload data to job {file_upload_job_id}")
     headers = {
-        "Authorization": f"Bearer {session_token}",
-        "Content-Type": "application/zip"
-        }
-    with open(args.zip, "rb") as f:
-        files = {
-            "file": ("upload.zip", f, "application/zip")
-        }
-    r = requests.post(f"{args.url}/api/v2/file-upload/{file_upload_job_id}", headers=headers, files=files)
-    data = r.json()
-    print(json.dumps(data, indent=2))
+        'accept': '*/*',
+        'Authorization': f'Bearer {session_token}',
+        'Content-Type': 'application/zip',
+    }
+    with open(args.zip, mode='rb') as f:
+        data = f.read()
+    r = requests.post(f"{args.url}/api/v2/file-upload/{file_upload_job_id}", headers=headers, data=data)
+    if r.status_code == 202:
+        print("\033[92m[+]\033[0m Upload data successfully")
+        print("[!] Wait 10 seconds for the file upload...")
+        sleep(10)
+    else:
+        print(f"\033[91m[-]\033[0m Upload data failed - {r.status_code}")
+        exit()
+
+    print("[*] Ending job")
+    r = requests.post(f"{args.url}/api/v2/file-upload/{file_upload_job_id}/end", headers=TOKEN)
+    if r.status_code == 200:
+        print("\033[92m[+]\033[0m Ending job successfully")
+    else:
+        print(f"\033[91m[-]\033[0m Ending job failed - {r.status_code}")
+        exit()
+    print("[*] Checking job status")
+    check = True
+    while check:
+        r = list_jobs(False)
+        for item in r["data"]:
+            if item['id'] not in ids:
+                status = "?"
+                if item['status'] == 3:
+                    status = "\033[91mCanceled\033[0m"
+                    print(' ' * 80, end='\r')
+                    print(f"[?] ID: {item['id']}, Status: {status}, Total Files: {item['total_files']}\n")
+                    ids.append(item['id'])
+                    upload_zip(run+1, ids)
+                elif item['status'] == 6:
+                    status = "\033[93mIngesting\033[0m"
+                elif item['status'] == 2:
+                    status = "\033[92mComplete\033[0m"
+                    if item['total_files'] == 0:
+                        status = "\033[91mCanceled\033[0m"
+                        print(' ' * 80, end='\r')
+                        print(f"[?] ID: {item['id']}, Status: {status}, Total Files: {item['total_files']}\n")
+                        ids.append(item['id'])
+                        upload_zip(run+1, ids)
+                    print(' ' * 80, end='\r')
+                    print(f"[?] ID: {item['id']}, Status: {status}, Total Files: {item['total_files']}\n")
+                    exit()
+                print(f"[?] ID: {item['id']}, Status: {status}, Total Files: {item['total_files']}", end='\r')
+                sleep(2)
 
 def clear_database():
     data = {
@@ -120,10 +173,16 @@ def clear_database():
         "deleteAssetGroupSelectors": [0]
     }
     r = requests.post(f"{args.url}/api/v2/clear-database", json=data, headers=TOKEN)
-    print(f"[!] Database cleard - {r.status_code}")
+    if r.status_code == 204:
+        print("\033[92m[+]\033[0m Database cleared successfully")
+    else:
+        print("\033[91m[-]\033[0m Database clearing failed")
 
 session_token = login()
-TOKEN = {"Authorization": f"Bearer {session_token}"}
+TOKEN = {
+    "Authorization": f"Bearer {session_token}",
+    "Accept": "application/json, text/plain, */*"
+    }
 if args.file:
     add_query_from_list()
 if args.query:
@@ -133,14 +192,11 @@ if args.remove:
         remove_all_queries()
     else:
         remove_query(args.remove)
-
-if args.list:
+if args.listquery:
     list_queries()
-
 if args.clear:
     clear_database()
-
 if args.zip:
-    upload(start_job())
-    print("----")
+    upload_zip()
+if args.listjobs:
     list_jobs()
