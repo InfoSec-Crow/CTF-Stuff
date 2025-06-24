@@ -14,3 +14,7 @@ chmod +x /opt/CTF-Stuff/setup/ctf/start_ctf.py
 
 sudo ln -s /opt/CTF-Stuff/scripts/adkit/adkit.py /usr/local/bin/adkit
 chmod +x /opt/CTF-Stuff/scripts/adkit/adkit.py 
+
+sudo ln -s /opt/CTF-Stuff/scripts/bloodhound-api/bh-api.py /usr/local/bin/bh-api
+chmod +x /opt/CTF-Stuff/scripts/bloodhound-api/bh-api.py
+
