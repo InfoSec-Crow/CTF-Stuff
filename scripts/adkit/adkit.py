@@ -62,6 +62,7 @@ parser.add_argument("-k", "--kerberos", nargs='?', const=True, default=False, he
 parser.add_argument("-t", "--target", type=str.lower, help='If no input is made, the username is the target')
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
 parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help=info)
+parser.add_argument("-ca", "--caname", help='The name of the CA to sign this cert')
 
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 
@@ -76,6 +77,7 @@ if args.ip:
 password = None
 box = config.Box()
 box.username = args.username
+box.ca = args.caname
 if args.password:
     box.password = args.password
     password = args.password
