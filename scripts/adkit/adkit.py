@@ -36,9 +36,14 @@ gmsa = ReadGMSAPassword\t(nxc)
 laps = ReadLAPSPassword\t(impacket)
 dcsync = DCSync\t(impacket)
 gold = Golden Ticket\t(impacket)
+silver = Silver Ticket\t(impacket)
 
 [ADCS]
 vulntemp = find vuln CertTemp\t(certipy)
+esc1 = ESC1\t(certipy)
+esc2 = ESC2\t(certipy)
+esc3 = ESC3\t(certipy)
+esc4 = ESC4\t(certipy)
 '''
 
 parser = argparse.ArgumentParser(
@@ -169,8 +174,16 @@ for action in args.action.split(','):
         atk.golden_ticket(box,path)  
     elif 'silver' == action:
         atk.silver_ticket(box,path) 
+
     elif 'vulntemp' == action:
         adcs.find_vuln_temp(box,path)
+    elif 'esc1' == action:
+        adcs.esc1(box,path)
+    elif 'esc2' == action or 'esc3' == action:
+        adcs.esc2_and_3(box,path, action[-1])
+    elif 'esc4' == action:
+        adcs.esc4(box,path)
+
 
     else:
         print(f'\033[91m[!]\033[0m There is no action: {action}')
