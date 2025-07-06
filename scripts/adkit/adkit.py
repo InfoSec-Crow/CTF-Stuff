@@ -146,7 +146,7 @@ HOSTNAME:\t{box.hostname}
 FQDN:\t\t{box.fqdn}
 DOMAIN:\t\t{box.domain}
 CREDS:\t\t{box.username} : {password}
-CACHE:\t\t{krb}
+CACHE:\t\t{box.krb}
 TARGET:\t\t{box.target} {optional_target}
 TARGET GROUP:\t{box.targetgroup}\n''')
 

