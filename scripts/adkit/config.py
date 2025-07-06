@@ -1,8 +1,9 @@
 import os
 from datetime import datetime, timedelta
 import pytz
+import re
 
-WS_PATH = '/home/kali/Desktop/'
+WS_PATH = '/home/kali/htb/box/'
 CMD_LOG_FILE = 'commands.log'
 VERBOSE = None
 
@@ -14,22 +15,24 @@ def get_hosts_entry():
     return l
 
 class Box:
-    try:
-        l = get_hosts_entry()
-        ip = l[0]
-        fqdn = l[1].lower()
-        hostname = l[3].lower()
-        domain = l[2].lower()
-        name = l[1].split('.')[1].lower()
-        username = None
-        password = None
-        nt_hash = None
-        krb = None
-        target = None
-        targetgroup = None
-        ca = None
-    except:
-        print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
+    def __init__(self):
+        try:
+            l = get_hosts_entry()
+            self.ip = l[0]
+            self.fqdn = l[1].lower()
+            self.hostname = l[3].lower()
+            self.domain = l[2].lower()
+            self.name = l[1].split('.')[1].lower()
+            self.username = None
+            self.password = None
+            self.nt_hash = None
+            self.krb = None
+            self.krb_ccache = None
+            self.target = None
+            self.targetgroup = None
+            self.ca = None
+        except:
+            print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
 
 class PATH:
     ws = None
@@ -83,8 +86,19 @@ def log_cmd(content):
                     f.write(de_timestemp() + '\n')
                     f.write(line + '\n')
 
+def set_hosts_entry_ldap(ip):
+    print('\033[93m[*]\033[0m Generate hosts file (nmap)')
+    cmd = f'nmap {ip} -p 389 --script ldap-rootdse'
+    print(f'\033[96m[$]\033[0m {cmd}')
+    output = os.popen(cmd).read()
+    match = re.search(r'dnsHostName:\s*(\S+)', output)
+    fqdn = match.group(1)
+    e = fqdn.split(".")
+    os.system(f'echo "{ip} {fqdn} {e[1]}.{e[2]} {e[0]}" | tee -a /etc/hosts')
+    print('\033[92m[+]\033[0m Generate hosts file\n')
+
 def set_hosts_entry(ip):
-    print('\033[93m[*]\033[0m Generate hosts file')
+    print('\033[93m[*]\033[0m Generate hosts file (nxc)')
     cmd = f'netexec smb {ip} --generate-hosts-file /etc/hosts'
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
@@ -92,21 +106,20 @@ def set_hosts_entry(ip):
     print('\033[92m[+]\033[0m Generate hosts file\n')
 
 def nt_hashing(box, nt_hash):
-    if nt_hash == 'empty':
+    if nt_hash is True:
         if box.password:
-            cmd = f"pypykatz crypto nt '{box.password}'"
+            cmd = f"pypykatz crypto nt {box.password}"
             return os.popen(cmd).read().strip()
         else:
             print('''\033[91m[!]\033[0m Required a hash or password for -H, --hash!
             ''')
             exit()
-    else:
-        return nt_hash.strip()
 
 def required_creds(box):
-    if box.password or box.nt_hash or box.krb or os.path.exists(f'{box.username}.ccache'):
-        if box.username:
-            return
+    if box.krb_ccache:
+        return
+    if box.username and (box.password or box.nt_hash):
+        return
     print('''\033[91m[!]\033[0m Required!
     -u, --username 
     -p, --password or -H, --hash
@@ -143,7 +156,7 @@ def kerberos_auth(box, path):
         if box.nt_hash:
             cmd = f"impacket-getTGT {box.domain}/{box.username} -hashes :{box.nt_hash}"
         else:
-            cmd = f"impacket-getTGT {box.domain}/{box.username}:'{box.password}'"
+            cmd = f"impacket-getTGT {box.domain}/{box.username}:{box.password}"
         log_cmd(cmd)
         print(f'\033[96m[$]\033[0m {cmd}')
         os.system(cmd)

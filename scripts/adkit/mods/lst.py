@@ -5,12 +5,14 @@ def users(box, path):
     config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Users')
-    if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username}-p -k get children --otype user"
+    if isinstance(box.krb, str):
+        cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype user"
+    elif box.krb:
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} -k get children --otype user"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} get children --otype user"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' get children --otype user"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} get children --otype user"
     cmd = cmd+ """ | awk -F'CN=' '{split($2,a,","); print a[1]}' | sed '/^$/d'"""
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
@@ -18,14 +20,17 @@ def users(box, path):
     print('\033[92m[+]\033[0m List Domain Users\n')
 
 def computers(box, path):
+    config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Computers')
-    if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p -k get children --otype computer"
+    if isinstance(box.krb, str):
+        cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype computer"
+    elif box.krb:
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} -k get children --otype computer"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} get children --otype computer"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' get children --otype computer"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} get children --otype computer"
     cmd = cmd+ """ | awk -F'CN=' '{split($2,a,","); print a[1]}' | sed '/^$/d' | sed 's/$/$/'"""
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
@@ -33,14 +38,17 @@ def computers(box, path):
     print('\033[92m[+]\033[0m List Domain Computers\n')
 
 def groups(box, path):
+    config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Groups')
+    if isinstance(box.krb, str):
+        cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype group"
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p -k get children --otype group"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} -k get children --otype group"
     elif box.nt_hash:
         cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p :{box.nt_hash} get children --otype group"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p '{box.password}' get children --otype group"
+        cmd = f"bloodyAD --host {box.fqdn} -d {box.domain} -u {box.username} -p {box.password} get children --otype group"
     cmd = cmd+ """ | awk -F'CN=' '{split($2,a,","); print a[1]}' | sed '/^$/d'"""
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')

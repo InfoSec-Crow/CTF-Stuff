@@ -1,0 +1,11 @@
+[libdefaults]
+        default_realm = <DOMAIN>
+[realms]
+        <DOMAIN> = {
+                kdc = <fqdn>
+                admin_server = <fqdn>
+                default_domain = <domain>
+        }
+[domain_realm]
+        .<domain> = <DOMAIN>
+        <domain>  = <DOMAIN>

