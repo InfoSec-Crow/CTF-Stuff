@@ -24,38 +24,6 @@ def generate_krb5(box):
     os.system('cat /etc/krb5.conf')
     print('\n\033[92m[+]\033[0m Generate /etc/krb5.conf file\n')
 
-def smb_view(box, path):
-    config.required_creds(box)
-    os.chdir(path.ws_enum)
-    print('\033[93m[*]\033[0m List SMB shares & files')
-    if isinstance(box.krb, str):
-        cmd = f"{box.krb_ccache} netexec smb {box.fqdn} --use-kcache --shares"
-        cmd2 = f"{box.krb_ccache} netexec smb {box.fqdn} --use-kcache -M spider_plus"
-        cmd3 = f"{box.krb_ccache} impacket-smbclient -k -no-pass {box.fqdn}"
-    elif box.krb:
-        cmd = f"netexec smb {box.fqdn} -u {box.username} -p {box.password} -k --shares"
-        cmd2 = f"netexec smb {box.fqdn} -u {box.username} -p {box.password} -k -M spider_plus"
-        cmd3 = f"impacket-smbclient -k {box.domain}/{box.username}:{box.password}@{box.fqdn}"
-    elif box.nt_hash:
-        cmd = f"netexec smb {box.fqdn} -u {box.username} -H {box.nt_hash} --shares"
-        cmd2 = f"netexec smb {box.fqdn} -u {box.username} -H {box.nt_hash} -M spider_plus"
-        cmd3 = f"impacket-smbclient {box.domain}/{box.username}@{box.fqdn} -hashes :{box.nt_hash}"
-    else:
-        cmd = f"netexec smb {box.fqdn} -u {box.username} -p {box.password} --shares"
-        cmd2 = f"netexec smb {box.fqdn} -u {box.username} -p {box.password} -M spider_plus"
-        cmd3 = f"impacket-smbclient {box.domain}/{box.username}:{box.password}@{box.fqdn}"
-    config.log_cmd(cmd)
-    print(f'\033[96m[$]\033[0m {cmd}')
-    filter = " | awk '/Share/ {f=1} f' | sed 's/^SMB.*"+box.hostname+"[[:space:]]\\+//'"
-    os.system(cmd+filter+f' | tee {box.username}_smb-shares.txt')
-    print(f'\n\033[96m[$]\033[0m {cmd2}')
-    out = os.popen(cmd2).read()
-    print('\n'.join(out.splitlines()[-10:]))
-    os.system(f'cp /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json .')
-    print(f'[*] Output file: /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json')
-    print(f'\n\033[96m[$]\033[0m {cmd3}')
-    print('\033[92m[+]\033[0m List SMB shares\n')
-
 def dmp_bloodhound_python(box, path):
     config.required_creds(box)
     print('\033[93m[*]\033[0m Dump BloodHound data (python)')

