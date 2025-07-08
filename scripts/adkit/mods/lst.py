@@ -14,7 +14,7 @@ Info:\t/
         return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
-    print('\033[93m[*]\033[0m List Domain Users')
+    print('\033[92m[*]\033[0m List Domain Users')
     if isinstance(box.krb, str):
         cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype user"
     elif box.krb:
@@ -27,7 +27,7 @@ Info:\t/
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd+ ' 2>&1 | tee user.lst')
-    print('\033[92m[+]\033[0m List Domain Users\n')
+    print('\033[38;5;28m[+]\033[0m List Domain Users\n')
 
 def computers(box, path):
     if config.HELP:    
@@ -42,7 +42,7 @@ Info:\t/
         return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
-    print('\033[93m[*]\033[0m List Domain Computers')
+    print('\033[92m[*]\033[0m List Domain Computers')
     if isinstance(box.krb, str):
         cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype computer"
     elif box.krb:
@@ -55,7 +55,7 @@ Info:\t/
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd+ ' 2>&1 | tee computer.lst')
-    print('\033[92m[+]\033[0m List Domain Computers\n')
+    print('\033[38;5;28m[+]\033[0m List Domain Computers\n')
 
 def groups(box, path):
     if config.HELP:    
@@ -70,7 +70,7 @@ Info:\t/
         return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
-    print('\033[93m[*]\033[0m List Domain Groups')
+    print('\033[92m[*]\033[0m List Domain Groups')
     if isinstance(box.krb, str):
         cmd = f"{box.krb_ccache} bloodyAD --host {box.fqdn} -d {box.domain} -k get children --otype group"
     if box.krb:
@@ -83,4 +83,4 @@ Info:\t/
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd+ ' 2>&1 | tee group.lst')
-    print('\033[92m[+]\033[0m List Domain Groups\n')
+    print('\033[38;5;28m[+]\033[0m List Domain Groups\n')

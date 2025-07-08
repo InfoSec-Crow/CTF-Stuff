@@ -3,16 +3,17 @@ import os
 import re
 import subprocess
 import argparse
-import config, manpage
+import config, box_target, manpage
 from mods import dacl, lst, enum, atk, adcs, protocol
 
 parser = argparse.ArgumentParser(
     description="Toolkit for Windows AD enumeration and exploitation",
-    #formatter_class=argparse.RawTextHelpFormatter,
+    formatter_class=argparse.RawTextHelpFormatter,
     add_help=False
 )
+parser.add_argument('--help', action="store_true", help='Display all or used action info')
+parser.add_argument('-h', action="help", help='Display the options/usage info')
 parser.add_argument("-i", "--ip", type=str, help='Only for generate hosts file (nxc)')
-parser.add_argument("--ldap", action="store_true", help='Generate hosts file via LDAP (nmap)')
 parser.add_argument("-u", "--username", type=str)
 parser.add_argument("-p", "--password", type=str)
 parser.add_argument("-H", "--hash", nargs='?', const=True, default=False, help='Use NT hash or make on from Password')
@@ -23,16 +24,15 @@ parser.add_argument("-tg", "--targetgroup", type=str.lower)
 parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help="Action to do (see --help)")
 parser.add_argument("-ca", "--caname", help='The name of the CA to sign this cert')
 parser.add_argument("-x", "--cmd", type=str, default='', help='Command/Query to run')
-parser.add_argument('--help', action="store_true", help='Display all or used action info')
-parser.add_argument('-h', action="help", help='Display the options/usage info')
+parser.add_argument("-y", "--skip", action="store_true", help='Skip user input, use DEFAULT')
+parser.add_argument("-q", "--quiet", action="store_true", help="Don't show box target info")
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 args = parser.parse_args()
 
+config.SKIP = args.skip
+config.QUITE = args.quiet
 if args.ip:
-    if args.ldap:
-        config.set_hosts_entry_ldap(args.ip)
-    else:
-        config.set_hosts_entry(args.ip)
+    config.set_hosts_entry(args.ip)
 
 #config.VERBOSE = [' > /dev/null 2>&1']
 #config.VERBOSE = args.verbose
@@ -42,9 +42,8 @@ if args.username and '$' in args.username:
 if args.target and '$' in args.target: 
     args.target = f"'{args.target}'"
 
-password = None
 optional_target = ""
-box = config.Box()
+box = box_target.Box()
 box.username = args.username
 box.ca = args.caname
 if not box.target:
@@ -56,11 +55,9 @@ if args.password:
     box.password = args.password
     if any(c in bad_terminal_chars for c in args.password):
         box.password = f"'{args.password}'"
-    password = args.password
 if args.hash:
     if args.hash is True:
-        box.nt_hash = config.nt_hashing(box, args.hash)
-        password = box.nt_hash
+        box.nt_hash = config.nt_hashing(box.password)
     else:
         if len(args.hash) != 32:
             print("\033[91m[!]\033[0m Wrong NT hash format: 32 length")
@@ -69,7 +66,6 @@ if args.hash:
             print("\033[91m[!]\033[0m Wrong NT hash format: only digits and lowercase letters")
             exit()
         box.nt_hash = args.hash
-        password = box.nt_hash
 
 path = config.PATH()
 path.setup(box.name)
@@ -83,8 +79,9 @@ os.makedirs(path.ws_adcs, exist_ok=True)
 os.makedirs(path.ws_scr, exist_ok=True)
 
 if args.kerberos:
+    config.check_krb_config(box.domain)
     box.krb = args.kerberos
-    os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
+    config.time_sync(box.fqdn)
     if args.kerberos is True or args.kerberos == 'set':
         ccache_path = config.kerberos_auth(box, path)
         box.krb_ccache = f"KRB5CCNAME='{ccache_path}'"
@@ -107,20 +104,13 @@ if args.help:
         print(manpage.info)
         exit(0)
 else:
-    print(f'''NAME:\t\t{box.name}
-    IP:\t\t{box.ip}
-    HOSTNAME:\t{box.hostname}
-    FQDN:\t\t{box.fqdn}
-    DOMAIN:\t\t{box.domain}
-    CREDS:\t\t{box.username} : {password}
-    CACHE:\t\t{box.krb}
-    TARGET:\t\t{box.target} {optional_target}
-    TARGET GROUP:\t{box.targetgroup}\n''')
+    box_target.info(box)
 
 if args.action == '__show__':
     print(manpage.info)
     exit(0)
 for action in args.action.split(','):
+# [Protocol]
     if 'smb' == action:
         protocol.smb_view(box,path)
     elif 'winrm' == action:
@@ -128,6 +118,7 @@ for action in args.action.split(','):
     elif 'ldap' == action:
         protocol.ldap(box, path, args.cmd)
 
+# [Enumeration]
     elif 'krb' == action:
         enum.generate_krb(box)
     elif 'bh' == action:
@@ -137,6 +128,7 @@ for action in args.action.split(','):
     elif 'sid' == action:
         enum.domain_sids(box, path)
 
+# [Lists]
     elif 'user' == action:
         lst.users(box, path)
     elif 'computer' == action:
@@ -144,6 +136,7 @@ for action in args.action.split(','):
     elif 'group' == action:
         lst.groups(box, path)
 
+# [DACL]
     elif 'acl' == action:
         dacl.list_acl(box, path)
     elif 'gadd' == action:
@@ -162,7 +155,10 @@ for action in args.action.split(','):
         dacl.dacledit(box)
     elif 'wspn' == action:
         dacl.write_spn(box)
+    elif 'cadd' == action:
+        dacl.addcomputer(box)
 
+# [Attack]
     elif 'aroast' == action:
         atk.asreproast(box, path)
     elif 'kroast' == action:
@@ -185,7 +181,10 @@ for action in args.action.split(','):
         atk.golden_ticket(box,path)  
     elif 'silver' == action:
         atk.silver_ticket(box,path) 
+    elif 'rbcd' == action:
+        atk.rbcd(box,path)
 
+# [ADCS]
     elif 'vulntemp' == action:
         adcs.find_vuln_temp(box,path)
     elif 'esc1' == action:

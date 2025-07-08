@@ -1,58 +1,50 @@
 
 info = '''
 [Protocol]
-smb = view smb shares & files
-winrm = login to winrm (cmd)
-ldap = login to ldap (query)
+smb\t= view smb shares & files
+winrm\t= login to winrm (cmd)
+ldap\t= login to ldap (query)
 
 [Enumeration]
-krb = generate krb config file
-bh = collect bloodhound data
-dele = find delegation
-sid = show all domain sids
+krb\t= generate krb config file
+bh\t= collect bloodhound data
+dele\t= find delegation
+sid\t= show all domain sids
 
 [Lists]
-user = list all usernames
+user\t= list all usernames
+group\t= list all groups
 computer = list all computers
-group = list all groups
 
 [DACL]
-acl = show acl\t(impacket)
-gadd = add user to group\t(bloodyad)
-glist = list groups from user\t(bloodyad)
-gremove = remove user from group\t(bloodyad)
-edit = set dacl FullControl\t(impacket)
-wspn = write spn\t(krbrelayx)
-active = activate account\t(bloodyad)
-wowner = write owner\t(impacket)
-rowner = read owner\t(impacket)
+acl\t= list dacl
+gadd\t= add user to group
+glist\t= list groups from user
+gremove\t= remove user from group
+edit\t= set dacl FullControl
+wspn\t= write spn
+active\t= activate account
+wowner\t= write owner
+rowner\t= read owner
+cadd\t= add computer
 
-[Attacks]
-aroast = asreproasting\t(nxc)
-kroast = kerberoasting\t(nxc)
-kroast-imp = kerberoasting only one user\t(impacket)
-chpw = ForceChangePassword\t(bloodyad)
-sc = Shadow Credentials\t(certipy)
-gmsa = ReadGMSAPassword\t(nxc)
-laps = ReadLAPSPassword\t(impacket)
-dcsync = DCSync\t(impacket)
-gold = Golden Ticket\t(impacket)
-silver = Silver Ticket\t(impacket)
+[Attack]
+aroast\t= asreproasting
+kroast\t= kerberoasting
+tkroast = target kerberoasting
+chpw\t= ForceChangePassword
+sc\t= Shadow Credentials
+gmsa\t= ReadGMSAPassword
+laps\t= ReadLAPSPassword
+dcsync\t= DCSync
+gold\t= Golden Ticket
+silver\t= Silver Ticket
+rbcd\t= Resource-Based Constrained Delegation
 
 [ADCS]
-vulntemp = find vuln CertTemp\t(certipy)
-esc1 = ESC1\t(certipy)
-esc2 = ESC2\t(certipy)
-esc3 = ESC3\t(certipy)
-esc4 = ESC4\t(certipy)
+vulntemp = find vuln CertTemp
+esc1\t= ESC1
+esc2\t= ESC2
+esc3\t= ESC3
+esc4\t= ESC4
 '''
-
-# [Protocol]
-
-def smb_view():
-    print("""
-Action:\tsmb
-Tools:\tnxc, impacket
-Desc:\ttest 
-""")
-    exit(0)

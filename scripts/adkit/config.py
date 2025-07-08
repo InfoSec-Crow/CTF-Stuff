@@ -6,7 +6,9 @@ import subprocess
 
 WS_PATH = '/home/kali/htb/box/'
 CMD_LOG_FILE = 'commands.log'
-HELP = None
+HELP = False
+SKIP = False
+QUITE = False
 
 def get_tun0_ip():
     try:
@@ -16,32 +18,31 @@ def get_tun0_ip():
         ip = '127.0.0.1'
     return ip
 
+def ask_for_action_choice(options):
+    default = options.split(",")[0].lower()
+    try:
+        if not SKIP:
+            user_input = input(f"\033[94m[>]\033[0m Choose one [{options}]: ").strip().lower() or default
+        else:
+            print(f"\033[94m[>]\033[0m Choose one [{options}]: {default}")
+            user_input = default
+        return user_input
+    except KeyboardInterrupt:
+        exit(0)
+
+def clear_hosts_entry():
+    print("[*] Clear /etc/hosts entries (*.htb)")
+    with open("/etc/hosts") as f:
+        lines = [line for line in f if ".htb" not in line]
+    with open("/etc/hosts", "w") as f:
+        f.writelines(lines)
+
 def get_hosts_entry():
     with open("/etc/hosts", "r", encoding="utf-8") as f:
             lines = f.readlines()
             last_line = lines[-1].strip() if lines else ""
     l = [x for x in last_line.split() if x]
     return l
-
-class Box:
-    def __init__(self):
-        try:
-            l = get_hosts_entry()
-            self.ip = l[0]
-            self.fqdn = l[1].lower()
-            self.hostname = l[3].lower()
-            self.domain = l[2].lower()
-            self.name = l[1].split('.')[1].lower()
-            self.username = None
-            self.password = None
-            self.nt_hash = None
-            self.krb = None
-            self.krb_ccache = None
-            self.target = None
-            self.targetgroup = None
-            self.ca = None
-        except:
-            print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
 
 class PATH:
     ws = None
@@ -96,34 +97,42 @@ def log_cmd(content):
                     f.write(de_timestemp() + '\n')
                     f.write(line + '\n')
 
-def set_hosts_entry_ldap(ip):
-    print('\033[93m[*]\033[0m Generate hosts file (nmap)')
-    cmd = f'nmap {ip} -p 389 --script ldap-rootdse'
-    print(f'\033[96m[$]\033[0m {cmd}')
-    output = os.popen(cmd).read()
-    match = re.search(r'dnsHostName:\s*(\S+)', output)
-    fqdn = match.group(1)
-    e = fqdn.split(".")
-    os.system(f'echo "{ip} {fqdn} {e[1]}.{e[2]} {e[0]}" | tee -a /etc/hosts')
-    print('\033[92m[+]\033[0m Generate hosts file\n')
-
 def set_hosts_entry(ip):
-    print('\033[93m[*]\033[0m Generate hosts file (nxc)')
-    cmd = f'netexec smb {ip} --generate-hosts-file /etc/hosts'
-    print(f'\033[96m[$]\033[0m {cmd}')
-    os.system(cmd)
-    os.system('tail -n1 /etc/hosts')
-    print('\033[92m[+]\033[0m Generate hosts file\n')
-
-def nt_hashing(box, nt_hash):
-    if nt_hash is True:
-        if box.password:
-            cmd = f"pypykatz crypto nt {box.password}"
-            return os.popen(cmd).read().strip()
-        else:
-            print('''\033[91m[!]\033[0m Required a hash or password for -H, --hash!
-            ''')
+    clear_hosts_entry()
+    user_input = ask_for_action_choice("NMAP,nxc")
+    if user_input.lower() == "nmap":
+        print('\033[95m[*]\033[0m Generate hosts file (nmap)')
+        cmd = f'nmap {ip} -p 389 --script ldap-rootdse'
+        print(f'\033[96m[$]\033[0m {cmd}')
+        output = os.popen(cmd).read()
+        try:
+            match = re.search(r'dnsHostName:\s*(\S+)', output)
+            fqdn = match.group(1)
+            e = fqdn.split(".")
+        except AttributeError:
+            print("\033[93m[-]\033[0m ERROR: Output missing dnsHostName entry. Try again!")
             exit()
+        os.system(f'echo "{ip} {fqdn} {e[1]}.{e[2]} {e[0]}" | tee -a /etc/hosts')
+        print('\033[38;5;28m[+]\033[0m Generate hosts file\n')
+    elif user_input.lower() == "nxc":
+        print('\033[92m[*]\033[0m Generate hosts file (nxc)')
+        cmd = f'netexec smb {ip} --generate-hosts-file /etc/hosts'
+        print(f'\033[96m[$]\033[0m {cmd}')
+        os.system(cmd)
+        os.system('tail -n1 /etc/hosts')
+        print('\033[38;5;28m[+]\033[0m Generate hosts file\n')
+    else:
+        print("\033[91m[!]\033[0m Incorrect input!")
+        exit()
+
+def nt_hashing(password):
+    if password:
+        cmd = f"pypykatz crypto nt {password}"
+        return os.popen(cmd).read().strip()
+    else:
+        print('''\033[91m[!]\033[0m Required a hash or password for -H, --hash!
+        ''')
+        exit()
 
 def required_creds(box):
     if box.krb_ccache:
@@ -157,18 +166,49 @@ def required_ca(box):
         ''')
         exit()
 
-def kerberos_auth(box, path):
+def time_sync(fqdn):
+    os.system(f'sudo ntpdate {fqdn} > /dev/null 2>&1')
+
+def check_krb_config(domain):
+    with open("/etc/krb5.conf") as f:
+        if domain not in f.read():
+            print("\033[93m[-]\033[0m Your /etc/krb5.conf file has not been generated yet, use -a krb")
+            try:
+                input("    Continue? [ENTER]")
+            except KeyboardInterrupt:
+                exit(0)
+
+def kerberos_auth(box, path, username_=None, password_=None):
     required_creds(box)
     os.chdir(path.ws_ccache)
+    username = box.username
+    password = box.password
+    if username_ and password_:
+        username = username_
+        password = password_
     if not os.path.exists(f'{box.username}.ccache'):
-        print('\033[93m[*]\033[0m Get TGT')
-        os.system(f'sudo ntpdate {box.fqdn} > /dev/null 2>&1')
-        if box.nt_hash:
-            cmd = f"impacket-getTGT {box.domain}/{box.username} -hashes :{box.nt_hash}"
+        print('\033[92m[*]\033[0m Get TGT')
+        time_sync(box.fqdn)
+        if box.nt_hash and (not username_ and not password_):
+            cmd = f"impacket-getTGT {box.domain}/{username} -hashes :{box.nt_hash}"
         else:
-            cmd = f"impacket-getTGT {box.domain}/{box.username}:{box.password}"
+            cmd = f"impacket-getTGT {box.domain}/{username}:{password}"
         log_cmd(cmd)
         print(f'\033[96m[$]\033[0m {cmd}')
         os.system(cmd)
-        print('\033[92m[+]\033[0m Get TGT\n')
+        print('\033[38;5;28m[+]\033[0m Get TGT\n')
     return f"{path.ws_ccache}{box.username}.ccache"
+
+def run_cmd(cmds, quick_cmd=None, msg=None):
+    log_cmd(cmds)
+    for i, cmd in enumerate(cmds, start=1):
+        if msg and i in msg:
+            print(msg[i])
+        try:
+            if quick_cmd and i in quick_cmd:
+                os.system(quick_cmd[i])
+            print(f'\033[96m[$]\033[0m {cmd}')
+            os.system(cmd)
+        except Exception as e:
+            print(f"\033[93m[-]\033[0m Error: {e}")
+            exit()

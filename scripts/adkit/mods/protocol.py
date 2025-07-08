@@ -16,7 +16,7 @@ Info:\t/
         return 0
     config.required_creds(box)
     os.chdir(path.ws_enum)
-    print('\033[93m[*]\033[0m List SMB shares & files')
+    print('\033[92m[*]\033[0m List SMB shares & files')
     if isinstance(box.krb, str):
         cmd = f"{box.krb_ccache} netexec smb {box.fqdn} --use-kcache --shares"
         cmd2 = f"{box.krb_ccache} netexec smb {box.fqdn} --use-kcache -M spider_plus"
@@ -43,7 +43,7 @@ Info:\t/
     os.system(f'cp /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json .')
     print(f'[*] Output file: /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json')
     print(f'\n\033[96m[$]\033[0m {cmd3}')
-    print('\033[92m[+]\033[0m List SMB shares\n')
+    print('\033[38;5;28m[+]\033[0m List SMB shares\n')
 
 def winrm(box, path, cmd):
     if config.HELP:    
@@ -63,7 +63,7 @@ Info:\tWhen passing commands with options, the shell closes or hangs.
         return 0
     config.required_creds(box)
     #os.chdir(path.ws_scr)
-    print('\033[93m[*]\033[0m Login to WinRm (run CMD)')
+    print('\033[92m[*]\033[0m Login to WinRm (run CMD)')
     ps_cmd = ""
     if cmd:
         if cmd.replace(".txt","") == "user":
@@ -94,7 +94,7 @@ Info:\tWhen passing commands with options, the shell closes or hangs.
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
-    print('\033[92m[+]\033[0m Login to WinRm')
+    print('\033[38;5;28m[+]\033[0m Login to WinRm')
 
 def ldap(box, path, cmd):
     if config.HELP:    
@@ -110,7 +110,7 @@ Info:\t/
         return 0
     config.required_creds(box)
     os.chdir(path.ws_enum)
-    print('\033[93m[*]\033[0m Login to LDAP (run Query)')
+    print('\033[92m[*]\033[0m Login to LDAP (run Query)')
     ps_cmd = ""
     if cmd:
         if cmd == "?":
@@ -128,4 +128,4 @@ Info:\t/
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
     os.system(cmd)
-    print('\033[92m[+]\033[0m Login to LDAP')
+    print('\033[38;5;28m[+]\033[0m Login to LDAP')
