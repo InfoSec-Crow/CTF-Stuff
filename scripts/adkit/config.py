@@ -2,10 +2,19 @@ import os
 from datetime import datetime, timedelta
 import pytz
 import re
+import subprocess
 
 WS_PATH = '/home/kali/htb/box/'
 CMD_LOG_FILE = 'commands.log'
-VERBOSE = None
+HELP = None
+
+def get_tun0_ip():
+    try:
+        ip = subprocess.check_output("ip a | grep -A 2 'tun0:' | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'", shell=True).decode().strip()
+    except:
+        print('No tun0 - use 127.0.0.1')
+        ip = '127.0.0.1'
+    return ip
 
 def get_hosts_entry():
     with open("/etc/hosts", "r", encoding="utf-8") as f:

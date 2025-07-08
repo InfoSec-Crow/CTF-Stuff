@@ -3,62 +3,13 @@ import os
 import re
 import subprocess
 import argparse
-import config
+import config, manpage
 from mods import dacl, lst, enum, atk, adcs, protocol
-
-info = '''
-[Protocol]
-smb = view smb shares & files\t(nxc,impacket)
-winrm = login to winrm cmd\t(evil-winrm)
-ldap = login to ldap query\t(evil-winrm)
-
-[Enumeration]
-krb = generate krb5 file\t(template)
-krb-nxc = generate krb5 file\t(nxc)
-bh-rust = collect bloodhound\t(rust-bh)
-bh-py = collect bloodhound\t(python-bh)
-dele = find delegation\t(impacket)
-sid = domain sids\t(impacket)
-
-[Lists]
-user = list all usernames\t(bloodyad)
-computer = list all computers\t(bloodyad)
-group = list all groups\t\t(bloodyad)
-
-[DACL]
-acl = show acl\t(impacket)
-gadd = add user to group\t(bloodyad)
-glist = list groups from user\t(bloodyad)
-gremove = remove user from group\t(bloodyad)
-edit = set dacl FullControl\t(impacket)
-wspn = write spn\t(krbrelayx)
-active = activate account\t(bloodyad)
-wowner = write owner\t(impacket)
-rowner = read owner\t(impacket)
-
-[Attacks]
-aroast = asreproasting\t(nxc)
-kroast = kerberoasting\t(nxc)
-kroast-imp = kerberoasting only one user\t(impacket)
-chpw = ForceChangePassword\t(bloodyad)
-sc = Shadow Credentials\t(certipy)
-gmsa = ReadGMSAPassword\t(nxc)
-laps = ReadLAPSPassword\t(impacket)
-dcsync = DCSync\t(impacket)
-gold = Golden Ticket\t(impacket)
-silver = Silver Ticket\t(impacket)
-
-[ADCS]
-vulntemp = find vuln CertTemp\t(certipy)
-esc1 = ESC1\t(certipy)
-esc2 = ESC2\t(certipy)
-esc3 = ESC3\t(certipy)
-esc4 = ESC4\t(certipy)
-'''
 
 parser = argparse.ArgumentParser(
     description="Toolkit for Windows AD enumeration and exploitation",
-    formatter_class=argparse.RawTextHelpFormatter
+    #formatter_class=argparse.RawTextHelpFormatter,
+    add_help=False
 )
 parser.add_argument("-i", "--ip", type=str, help='Only for generate hosts file (nxc)')
 parser.add_argument("--ldap", action="store_true", help='Generate hosts file via LDAP (nmap)')
@@ -67,12 +18,13 @@ parser.add_argument("-p", "--password", type=str)
 parser.add_argument("-H", "--hash", nargs='?', const=True, default=False, help='Use NT hash or make on from Password')
 parser.add_argument("-k", "--kerberos", nargs='?', const=True, default=False, help="Use Kerberos authentication; passing of ccache file path possible")
 
-parser.add_argument("-t", "--target", type=str.lower, help='If no input is made, the username is the target')
+parser.add_argument("-t", "--target", type=str, help='If no input is made, the username is the target')
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
-parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help=info)
+parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help="Action to do (see --help)")
 parser.add_argument("-ca", "--caname", help='The name of the CA to sign this cert')
 parser.add_argument("-x", "--cmd", type=str, default='', help='Command/Query to run')
-
+parser.add_argument('--help', action="store_true", help='Display all or used action info')
+parser.add_argument('-h', action="help", help='Display the options/usage info')
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 args = parser.parse_args()
 
@@ -148,19 +100,26 @@ if args.kerberos:
     if box.nt_hash:
         box.krb = ccache_path
 
-print(f'''NAME:\t\t{box.name}
-IP:\t\t{box.ip}
-HOSTNAME:\t{box.hostname}
-FQDN:\t\t{box.fqdn}
-DOMAIN:\t\t{box.domain}
-CREDS:\t\t{box.username} : {password}
-CACHE:\t\t{box.krb}
-TARGET:\t\t{box.target} {optional_target}
-TARGET GROUP:\t{box.targetgroup}\n''')
+config.HELP = args.help
+if args.help:
+    print("[?] Show action infos")
+    if not args.action:
+        print(manpage.info)
+        exit(0)
+else:
+    print(f'''NAME:\t\t{box.name}
+    IP:\t\t{box.ip}
+    HOSTNAME:\t{box.hostname}
+    FQDN:\t\t{box.fqdn}
+    DOMAIN:\t\t{box.domain}
+    CREDS:\t\t{box.username} : {password}
+    CACHE:\t\t{box.krb}
+    TARGET:\t\t{box.target} {optional_target}
+    TARGET GROUP:\t{box.targetgroup}\n''')
 
 if args.action == '__show__':
-    print(info)
-    exit()
+    print(manpage.info)
+    exit(0)
 for action in args.action.split(','):
     if 'smb' == action:
         protocol.smb_view(box,path)
@@ -170,13 +129,9 @@ for action in args.action.split(','):
         protocol.ldap(box, path, args.cmd)
 
     elif 'krb' == action:
-        enum.generate_krb5(box)
-    elif 'krb-exc' == action:
-        enum.generate_krb5_nxc(box)
-    elif 'bh-rust' == action:
-        enum.dmp_bloodhound_rust(box, path) 
-    elif 'bh-py' == action:
-        enum.dmp_bloodhound_python(box, path) 
+        enum.generate_krb(box)
+    elif 'bh' == action:
+        enum.dmp_bloodhound(box, path) 
     elif 'dele' == action:
         enum.findDelegation(box, path)
     elif 'sid' == action:
