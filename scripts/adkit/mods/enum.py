@@ -1,41 +1,39 @@
 import os 
-import config
+import config, settings
 import sys
 import select
 
-krb_temp = "/opt/CTF-Stuff/scripts/adkit/krb_temp.txt"
-
 def generate_krb(box):
     if config.HELP:    
-        print("""
+        print(f"""
 Action:\t[Enumeration] krb
 Tool:\t[netexec, temp]
 Option:\t/
-Desc:\tGenerate the /etc/krb5.conf for Kerberos authentication.
+Desc:\tGenerate the {settings.KRB_FILE} for Kerberos authentication.
 Info:\tUsing netexec sometimes creates incorrect output.
         """)
         return 0
-    print('\033[92m[*]\033[0m Generate /etc/krb5.conf file')
+    print(f'\033[92m[*]\033[0m Generate {settings.KRB_FILE} file')
     user_input = config.ask_for_action_choice("TEMP,nxc")
     if user_input.lower() == "nxc":
-        cmd = f'netexec smb {box.fqdn} --generate-krb5-file /etc/krb5.conf'
+        cmd = f'netexec smb {box.fqdn} --generate-krb5-file {settings.KRB_FILE}'
         config.log_cmd(cmd)
         print(f'\033[96m[$]\033[0m {cmd}')
         os.system(cmd)
-        os.system('cat /etc/krb5.conf')
+        os.system(f'cat {settings.KRB_FILE}')
     elif user_input.lower() == "temp":
-        with open(krb_temp, "r") as f:
+        with open(settings.KRB_TEMP_FILE, "r") as f:
             content = f.read()
         content = content.replace("<DOMAIN>", box.domain.upper())
         content = content.replace("<domain>", box.domain)
         content = content.replace("<fqdn>", box.fqdn)
-        with open("/etc/krb5.conf", "w") as f:
+        with open(settings.KRB_FILE, "w") as f:
             f.write(content)
-        os.system('cat /etc/krb5.conf')
+        os.system(f'cat {settings.KRB_FILE}')
     else:
         print("\033[91m[!]\033[0m Incorrect input!")
         exit()
-    print('\n\033[38;5;28m[+]\033[0m Generate /etc/krb5.conf file\n')
+    print(f'\n\033[38;5;28m[+]\033[0m Generate {settings.KRB_FILE} file\n')
 
 def dmp_bloodhound(box, path):
     if config.HELP:    

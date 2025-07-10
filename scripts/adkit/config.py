@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 import pytz
 import re
 import subprocess
+import settings
 
-WS_PATH = '/home/kali/htb/box/'
-CMD_LOG_FILE = 'commands.log'
 HELP = False
 SKIP = False
 QUITE = False
+CWD = None
+OUTPUT_FILE = None
 
 def get_tun0_ip():
     try:
@@ -31,14 +32,14 @@ def ask_for_action_choice(options):
         exit(0)
 
 def clear_hosts_entry():
-    print("[*] Clear /etc/hosts entries (*.htb)")
-    with open("/etc/hosts") as f:
+    print(f"[*] Clear {settings.HOSTS_FILE} entries (*.htb)")
+    with open(settings.HOSTS_FILE) as f:
         lines = [line for line in f if ".htb" not in line]
-    with open("/etc/hosts", "w") as f:
+    with open(settings.HOSTS_FILE, "w") as f:
         f.writelines(lines)
 
 def get_hosts_entry():
-    with open("/etc/hosts", "r", encoding="utf-8") as f:
+    with open(settings.HOSTS_FILE, "r", encoding="utf-8") as f:
             lines = f.readlines()
             last_line = lines[-1].strip() if lines else ""
     l = [x for x in last_line.split() if x]
@@ -54,7 +55,7 @@ class PATH:
 
     @classmethod
     def setup(cls, name):
-        cls.ws = f'{WS_PATH}{name}/adkit'
+        cls.ws = f'{settings.WS_PATH}{name}/adkit'
         cls.ws_log = f'{cls.ws}/log/'
         cls.ws_enum = f'{cls.ws}/enum/'
         cls.ws_lst = f'{cls.ws}/lst/'
@@ -70,7 +71,7 @@ def de_timestemp():
 
 def log_cmd(content):
     path = PATH()
-    log_path = f'{path.ws_log}/{CMD_LOG_FILE}'
+    log_path = f'{path.ws_log}/{settings.CMD_LOG_FILE}'
     if content:
         if isinstance(content, list):
             content = [line.strip() for line in content if line.strip()]
@@ -112,14 +113,14 @@ def set_hosts_entry(ip):
         except AttributeError:
             print("\033[93m[-]\033[0m ERROR: Output missing dnsHostName entry. Try again!")
             exit()
-        os.system(f'echo "{ip} {fqdn} {e[1]}.{e[2]} {e[0]}" | tee -a /etc/hosts')
+        os.system(f'echo "{ip} {fqdn} {e[1]}.{e[2]} {e[0]}" | tee -a {settings.HOSTS_FILE}')
         print('\033[38;5;28m[+]\033[0m Generate hosts file\n')
     elif user_input.lower() == "nxc":
         print('\033[92m[*]\033[0m Generate hosts file (nxc)')
-        cmd = f'netexec smb {ip} --generate-hosts-file /etc/hosts'
+        cmd = f'netexec smb {ip} --generate-hosts-file {settings.HOSTS_FILE}'
         print(f'\033[96m[$]\033[0m {cmd}')
         os.system(cmd)
-        os.system('tail -n1 /etc/hosts')
+        os.system(f'tail -n1 {settings.HOSTS_FILE}')
         print('\033[38;5;28m[+]\033[0m Generate hosts file\n')
     else:
         print("\033[91m[!]\033[0m Incorrect input!")
@@ -170,9 +171,9 @@ def time_sync(fqdn):
     os.system(f'sudo ntpdate {fqdn} > /dev/null 2>&1')
 
 def check_krb_config(domain):
-    with open("/etc/krb5.conf") as f:
+    with open(settings.KRB_FILE) as f:
         if domain not in f.read():
-            print("\033[93m[-]\033[0m Your /etc/krb5.conf file has not been generated yet, use -a krb")
+            print(f"\033[93m[-]\033[0m Your {settings.KRB_FILE} file has not been generated yet, use -a krb")
             try:
                 input("    Continue? [ENTER]")
             except KeyboardInterrupt:

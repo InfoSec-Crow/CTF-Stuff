@@ -17,6 +17,7 @@ class Box:
             self.target = None
             self.targetgroup = None
             self.ca = None
+            self.file = None
         except:
             print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
 
@@ -43,6 +44,8 @@ def info(box):
             info['TARGET'] = box.target
         if box.targetgroup:
             info['TARGETGROUP'] = box.targetgroup
+        if box.file:
+            info['FILE'] = box.file
         key_width = 17
         val_width = 35
         line = f"\033[96m+\033[0m{'-'*key_width}\033[96m•\033[0m{'-'*val_width}\033[96m+\033[0m"

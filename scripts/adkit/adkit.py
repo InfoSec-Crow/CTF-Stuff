@@ -21,6 +21,8 @@ parser.add_argument("-k", "--kerberos", nargs='?', const=True, default=False, he
 
 parser.add_argument("-t", "--target", type=str, help='If no input is made, the username is the target')
 parser.add_argument("-tg", "--targetgroup", type=str.lower)
+parser.add_argument("-f", "--file", type=str, help="Input file name")
+parser.add_argument("-o", "--outputfile", type=str, help="Output file name")
 parser.add_argument("-a", "--action", default='', type=str, const='__show__', nargs="?", help="Action to do (see --help)")
 parser.add_argument("-ca", "--caname", help='The name of the CA to sign this cert')
 parser.add_argument("-x", "--cmd", type=str, default='', help='Command/Query to run')
@@ -29,8 +31,13 @@ parser.add_argument("-q", "--quiet", action="store_true", help="Don't show box t
 #parser.add_argument("-v", "--verbose", action="store_true", help="Show command output == terminal")
 args = parser.parse_args()
 
+config.CWD = os.getcwd()
 config.SKIP = args.skip
 config.QUITE = args.quiet
+if args.outputfile and "/" not in args.outputfile:
+    config.OUTPUT_FILE = f"{os.getcwd()}/{args.outputfile}"
+else:
+    config.OUTPUT_FILE = args.outputfile
 if args.ip:
     config.set_hosts_entry(args.ip)
 
@@ -46,6 +53,7 @@ optional_target = ""
 box = box_target.Box()
 box.username = args.username
 box.ca = args.caname
+box.file = args.file
 if not box.target:
     optional_target = f"({box.username})"
 box.target = args.target
