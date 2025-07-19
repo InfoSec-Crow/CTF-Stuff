@@ -35,13 +35,14 @@ Info:\t/
         cmd3 = f"impacket-smbclient {box.domain}/{box.username}:{box.password}@{box.fqdn}"
     config.log_cmd(cmd)
     print(f'\033[96m[$]\033[0m {cmd}')
-    filter = " | awk '/Share/ {f=1} f' | sed 's/^SMB.*"+box.hostname+"[[:space:]]\\+//'"
+    filter = " | sed 's/^\([^[:space:]]\+[[:space:]]\+\)\{4\}//'"
     os.system(cmd+filter+f' | tee {box.username}_smb-shares.txt')
     print(f'\n\033[96m[$]\033[0m {cmd2}')
     out = os.popen(cmd2).read()
     print('\n'.join(out.splitlines()[-10:]))
-    os.system(f'cp /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json .')
-    print(f'[*] Output file: /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json')
+    os.system(f'cp /home/kali/.nxc/modules/nxc_spider_plus/{box.fqdn}.json {box.username}_shares-files.json')
+    os.system(f'cp /home/kali/.nxc/modules/nxc_spider_plus/{box.ip}.json {box.username}_shares-files.json')
+    print(f'[*] Output file in /enum/{box.username}_shares-files.json')
     print(f'\n\033[96m[$]\033[0m {cmd3}')
     print('\033[38;5;28m[+]\033[0m List SMB shares\n')
 
@@ -53,11 +54,11 @@ Tools:\tevil-winrm
 Option:\t-u, --username
 \t-p --password; -H, --hash; -k
 \t-x, --cmd (Optional)
-\t-t, --target (Optional)
+\t-t, --target [username:password] (Optional)
 Desc:\tLogs in via WinRM.\n\tOptionally execute a command or as the specified target.
 \t ~ user = read user.txt from the current Desktop folder
 \t ~ root = read root.txt from the administrator Desktop folder
-\t ~ rs   = open a reverse shell for this user or target
+\t ~ rs   = open a reverse shell for this user or target (port 1234)
 Info:\tWhen passing commands with options, the shell closes or hangs.
         """)
         return 0
@@ -104,19 +105,42 @@ Tool:\tnetexec
 Option:\t-u, --username
 \t-p, --password; -H, --hash; -k
 \t-x, --cmd (Optional)
-Desc:\tLogs in via LDAP.\n\tSend a query but no filter is set.
-Info:\t/
+Desc:\tLogs in via LDAP.\n\tSend a custom query with no filter or opens a menu when no cmd parameter is set.
+Info:\tUse sAMAccountName for filter or input.
         """)
         return 0
     config.required_creds(box)
     os.chdir(path.ws_enum)
     print('\033[92m[*]\033[0m Login to LDAP (run Query)')
-    ps_cmd = ""
     if cmd:
-        if cmd == "?":
-            pass
-        else:
+        query = f"--query '{cmd}' ''"
+    else:
+        choice = config.show_menu("LDAP",["All enabled users", "All disabled users", "All attributes from user(s)", "All users with description"])
+        if choice == 1:
+            cmd = "(&(objectCategory=person)(objectClass=user)(!(useraccountcontrol:1.2.840.113556.1.4.803:=2)))"
+            query = f"--query '{cmd}' 'samaccountname'"
+            query = query + " | grep sAMAccountName | awk '{print$6}'"
+        elif choice == 2:
+            cmd = "(&(objectCategory=person)(objectClass=user)(useraccountcontrol:1.2.840.113556.1.4.803:=2))"
+            query = f"--query '{cmd}' 'samaccountname'"
+            query = query + " | grep sAMAccountName | awk '{print$6}'"
+        elif choice == 3:
+            choice_ = config.ask_for_action_choice("*,samaccountname")
+            if choice_ == "*":
+                output_file = "users_attributes.out"
+            else:
+                output_file = f"{choice_}_attributes.out"
+            cmd = f"(&(objectCategory=person)(objectClass=user)(sAMAccountName={choice_}))"
             query = f"--query '{cmd}' ''"
+            query = query + " | awk '{$1=$2=$3=$4=\"\"; sub(/^    */, \"\"); print}' > "+output_file
+            print(f"[*] Save output in file: {os.getcwd()}/{output_file}")
+        elif choice == 4:
+            cmd = "(&(objectCategory=person)(objectClass=user)(description=*))"
+            query = f"--query '{cmd}' 'description samaccountname'"
+            query = query + " | awk '{$1=$2=$3=$4=\"\"; sub(/^    */, \"\"); print}' > users_description.out"
+            print(f"[*] Save output in file: {os.getcwd()}/users_description.out")
+
+
     if isinstance(box.krb, str):
         cmd = f"{box.krb_ccache} netexec ldap {box.fqdn} --use-kcache {query}"
     elif box.krb:
@@ -126,6 +150,6 @@ Info:\t/
     else:
         cmd = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} {query}"
     config.log_cmd(cmd)
-    print(f'\033[96m[$]\033[0m {cmd}')
+    print(f'\033[96m[$]\033[0m {cmd}\n')
     os.system(cmd)
     print('\033[38;5;28m[+]\033[0m Login to LDAP')

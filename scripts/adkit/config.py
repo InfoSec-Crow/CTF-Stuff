@@ -15,9 +15,22 @@ def get_tun0_ip():
     try:
         ip = subprocess.check_output("ip a | grep -A 2 'tun0:' | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'", shell=True).decode().strip()
     except:
-        print('No tun0 - use 127.0.0.1')
+        print('\033[93m[-]\033[0m No tun0, use 127.0.0.1')
         ip = '127.0.0.1'
     return ip
+
+def show_menu(title, menu):
+    print(f"[--- {title} Menu ---]")
+    for index, text in enumerate(menu, start=1):
+        print(f"{index}. {text}")
+    try:
+        choice = input("\n\033[94m[>]\033[0m Choose nummber: ").strip()
+        if not choice.isdigit() or int(choice) > len(menu) or int(choice) == 0:
+           print("\033[93m[-]\033[0m Wrong Input")
+           show_menu(title, menu)
+        return int(choice)
+    except KeyboardInterrupt:
+        exit()
 
 def ask_for_action_choice(options):
     default = options.split(",")[0].lower()
@@ -46,15 +59,19 @@ def get_hosts_entry():
     return l
 
 class PATH:
-    ws = None
-    ws_log = None
-    ws_dump = None
-    ws_lst = None
-    ws_atk = None
-    ws_adcs = None
-
     @classmethod
-    def setup(cls, name):
+    def setup(cls, name=None):
+        if not name:
+            cls.ws = None
+            cls.ws_log = None
+            cls.ws_enum = None
+            cls.ws_lst = None
+            cls.ws_atk = None
+            cls.ws_ccache = None
+            cls.ws_adcs = None
+            cls.ws_scr = None
+            return
+
         cls.ws = f'{settings.WS_PATH}{name}/adkit'
         cls.ws_log = f'{cls.ws}/log/'
         cls.ws_enum = f'{cls.ws}/enum/'
@@ -64,6 +81,7 @@ class PATH:
         cls.ws_adcs = f'{cls.ws}/adcs/'
         cls.ws_scr = f'{cls.ws}/scr/'
 
+
 def de_timestemp():
     utc_now = datetime.now(pytz.utc)
     de_time = utc_now - timedelta(hours=2)
@@ -71,7 +89,10 @@ def de_timestemp():
 
 def log_cmd(content):
     path = PATH()
-    log_path = f'{path.ws_log}/{settings.CMD_LOG_FILE}'
+    if path.ws_log:
+        log_path = f'{path.ws_log}/{settings.CMD_LOG_FILE}'
+    else: 
+        log_path = f"/tmp/{settings.CMD_LOG_FILE}"
     if content:
         if isinstance(content, list):
             content = [line.strip() for line in content if line.strip()]
@@ -199,17 +220,3 @@ def kerberos_auth(box, path, username_=None, password_=None):
         os.system(cmd)
         print('\033[38;5;28m[+]\033[0m Get TGT\n')
     return f"{path.ws_ccache}{box.username}.ccache"
-
-def run_cmd(cmds, quick_cmd=None, msg=None):
-    log_cmd(cmds)
-    for i, cmd in enumerate(cmds, start=1):
-        if msg and i in msg:
-            print(msg[i])
-        try:
-            if quick_cmd and i in quick_cmd:
-                os.system(quick_cmd[i])
-            print(f'\033[96m[$]\033[0m {cmd}')
-            os.system(cmd)
-        except Exception as e:
-            print(f"\033[93m[-]\033[0m Error: {e}")
-            exit()

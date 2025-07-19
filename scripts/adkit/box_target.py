@@ -2,6 +2,15 @@ import config
 
 class Box:
     def __init__(self):
+        self.username = None
+        self.password = None
+        self.nt_hash = None
+        self.krb = None
+        self.krb_ccache = None
+        self.target = None
+        self.targetgroup = None
+        self.ca = None
+        self.file = None
         try:
             l = config.get_hosts_entry()
             self.ip = l[0]
@@ -9,20 +18,16 @@ class Box:
             self.hostname = l[3].lower()
             self.domain = l[2].lower()
             self.name = l[1].split('.')[1].lower()
-            self.username = None
-            self.password = None
-            self.nt_hash = None
-            self.krb = None
-            self.krb_ccache = None
-            self.target = None
-            self.targetgroup = None
-            self.ca = None
-            self.file = None
         except:
-            print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: IP FQDN DOMAIN HOSTNEM')
+            self.ip = None
+            self.fqdn = None
+            self.hostname = None
+            self.domain = None
+            self.name = None
+            print(f'\033[91m[!]\033[0m Host entry not there or wrong!\n\tFormat: \033[93m IP FQDN DOMAIN HOSTNEM \033[0m')
 
 def info(box):
-    if not config.QUITE:
+    if not config.QUITE and box.ip:
         info = {
         "NAME": box.name,
         "IP": box.ip,
@@ -54,5 +59,6 @@ def info(box):
             print(f"| {key:<{key_width-1}}\033[96m:\033[0m {val:<{val_width-1}}|")
             if i % 5 == 0:
                 print(line)
-        print(line)
+        if len(info.items()) > 5:
+            print(line)
     print()

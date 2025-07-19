@@ -4,7 +4,7 @@ import re
 import subprocess
 import argparse
 import config, box_target, manpage
-from mods import dacl, lst, enum, atk, adcs, protocol
+from mods import dacl, lst, enum, atk, adcs, protocol, msf
 
 parser = argparse.ArgumentParser(
     description="Toolkit for Windows AD enumeration and exploitation",
@@ -43,19 +43,19 @@ if args.ip:
 
 #config.VERBOSE = [' > /dev/null 2>&1']
 #config.VERBOSE = args.verbose
+
 bad_terminal_chars = set(r"$&;|<>()[\]{}?*~`\"\\!#%^=")
 if args.username and '$' in args.username: 
     args.username = f"'{args.username}'"
 if args.target and '$' in args.target: 
     args.target = f"'{args.target}'"
 
-optional_target = ""
+
+# Init
 box = box_target.Box()
 box.username = args.username
 box.ca = args.caname
 box.file = args.file
-if not box.target:
-    optional_target = f"({box.username})"
 box.target = args.target
 box.targetgroup = args.targetgroup
 
@@ -77,14 +77,15 @@ if args.hash:
 
 path = config.PATH()
 path.setup(box.name)
-os.makedirs(path.ws, exist_ok=True)
-os.makedirs(path.ws_log, exist_ok=True)
-os.makedirs(path.ws_enum, exist_ok=True)
-os.makedirs(path.ws_lst, exist_ok=True)
-os.makedirs(path.ws_atk, exist_ok=True)
-os.makedirs(path.ws_ccache, exist_ok=True)
-os.makedirs(path.ws_adcs, exist_ok=True)
-os.makedirs(path.ws_scr, exist_ok=True)
+if box.name:
+    os.makedirs(path.ws, exist_ok=True)
+    os.makedirs(path.ws_log, exist_ok=True)
+    os.makedirs(path.ws_enum, exist_ok=True)
+    os.makedirs(path.ws_lst, exist_ok=True)
+    os.makedirs(path.ws_atk, exist_ok=True)
+    os.makedirs(path.ws_ccache, exist_ok=True)
+    os.makedirs(path.ws_adcs, exist_ok=True)
+    os.makedirs(path.ws_scr, exist_ok=True)
 
 if args.kerberos:
     config.check_krb_config(box.domain)
@@ -202,6 +203,9 @@ for action in args.action.split(','):
     elif 'esc4' == action:
         adcs.esc4(box,path)
 
+    elif 'msf' == action:
+        msf.menu(box,path)
     else:
-        print(f'\033[91m[!]\033[0m There is no action: {action}')
-        exit()
+        if args.action:
+            print(f'\033[91m[!]\033[0m There is no action: {action}')
+            exit()

