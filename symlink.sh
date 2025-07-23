@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Scripts
 sudo ln -s /opt/CTF-Stuff/scripts/makepl/makepl.py /usr/local/bin/makepl
 chmod +x /usr/local/bin/makepl
 
@@ -19,8 +18,5 @@ chmod +x /opt/CTF-Stuff/scripts/time_sync/t.py
 sudo ln -s /opt/CTF-Stuff/scripts/bloodhound-api/bh-api.py /usr/local/bin/bh-api
 chmod +x /opt/CTF-Stuff/scripts/bloodhound-api/bh-api.py
 
-
-
-# Setup
-sudo ln -s /opt/CTF-Stuff/setup/ctf/start_ctf.py /usr/local/bin/start_ctf
-chmod +x /opt/CTF-Stuff/setup/ctf/start_ctf.py
+sudo ln -s /opt/CTF-Stuff/scripts/port_scan/rmap.py /usr/local/bin/rmap
+chmod +x /opt/CTF-Stuff/scripts/port_scan/rmap.py
