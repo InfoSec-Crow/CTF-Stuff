@@ -17,6 +17,7 @@ else:
 
 filename = f"{name}_nmap-scan.txt"
 cmd = f"rustscan -a {args.ip} -- -sC -sV -oN {filename}"
-print(f"\n[$] {cmd}")
+print(f"[$] {cmd}")
 os.system(cmd)
+os.system(f"awk '/^PORT/{{flag=1}} /^Read data files/{{flag=0}} flag' {filename}")
 print(f"\n[+] Save outout in file: {filename}")
