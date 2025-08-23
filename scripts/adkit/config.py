@@ -44,6 +44,18 @@ def ask_for_action_choice(options):
     except KeyboardInterrupt:
         exit(0)
 
+def ip_in_hosts(ip):
+    found = False
+    with open(settings.HOSTS_FILE, "r") as f:
+        for line in f:
+            if ip in line:
+                found = True
+                break
+    if found:
+        return True
+    else:
+        return False
+
 def clear_hosts_entry():
     print(f"[*] Clear {settings.HOSTS_FILE} entries (*.htb)")
     with open(settings.HOSTS_FILE) as f:

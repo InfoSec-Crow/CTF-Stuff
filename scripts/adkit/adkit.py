@@ -39,7 +39,8 @@ if args.outputfile and "/" not in args.outputfile:
 else:
     config.OUTPUT_FILE = args.outputfile
 if args.ip:
-    config.set_hosts_entry(args.ip)
+    if not config.ip_in_hosts(args.ip):
+        config.set_hosts_entry(args.ip)
 
 #config.VERBOSE = [' > /dev/null 2>&1']
 #config.VERBOSE = args.verbose
