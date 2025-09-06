@@ -20,3 +20,6 @@ chmod +x /opt/CTF-Stuff/scripts/bloodhound-api/bh-api.py
 
 sudo ln -s /opt/CTF-Stuff/scripts/port_scan/rmap.py /usr/local/bin/rmap
 chmod +x /opt/CTF-Stuff/scripts/port_scan/rmap.py
+
+sudo ln -s /opt/CTF-Stuff/scripts/iptables_redirect/rdr.py /usr/local/bin/rdr
+chmod +x /opt/CTF-Stuff/scripts/iptables_redirect/rdr.py
